@@ -4,8 +4,6 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DIRECTOR_PIN = process.env.DIRECTOR_PIN || 'dir2026';
-const ADMIN_PIN = process.env.ADMIN_PIN || 'admin2026';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -63,6 +61,18 @@ async function initDB() {
       imported_at TIMESTAMP DEFAULT NOW(),
       UNIQUE(staff_id, fiscal_year_id, month_key, day_of_month)
     );
+    CREATE TABLE IF NOT EXISTS directors (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(150) NOT NULL,
+      pin VARCHAR(20) NOT NULL,
+      role VARCHAR(30) NOT NULL DEFAULT 'director',
+      center VARCHAR(50),
+      can_manage BOOLEAN DEFAULT true,
+      can_view_all BOOLEAN DEFAULT false,
+      also_staff_id INTEGER REFERENCES staff(id) ON DELETE SET NULL,
+      is_active BOOLEAN DEFAULT true,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
   `);
   console.log('✅ Staff Time tables ready');
 }
@@ -89,10 +99,61 @@ app.post('/api/staff-login', async (req, res) => {
 });
 
 app.post('/api/director-login', async (req, res) => {
-  const { pin } = req.body;
-  if (pin === DIRECTOR_PIN) return res.json({ ok: true, role: 'director' });
-  if (pin === ADMIN_PIN) return res.json({ ok: true, role: 'admin' });
-  res.status(401).json({ error: 'Invalid PIN' });
+  try {
+    const { pin } = req.body;
+    const { rows } = await pool.query(
+      'SELECT * FROM directors WHERE pin = $1 AND is_active = true', [pin]
+    );
+    if (!rows.length) return res.status(401).json({ error: 'Invalid PIN' });
+    const d = rows[0];
+    res.json({
+      ok: true, director_id: d.id, name: d.name, role: d.role,
+      center: d.center, can_manage: d.can_manage, can_view_all: d.can_view_all,
+      also_staff_id: d.also_staff_id
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── DIRECTOR MANAGEMENT (owner-only) ──
+app.get('/api/directors', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT id, name, pin, role, center, can_manage, can_view_all, also_staff_id, is_active FROM directors WHERE is_active = true ORDER BY name'
+    );
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/directors', async (req, res) => {
+  try {
+    const { name, pin, role, center, can_manage, can_view_all, also_staff_id } = req.body;
+    const { rows } = await pool.query(
+      `INSERT INTO directors (name, pin, role, center, can_manage, can_view_all, also_staff_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [name, pin, role || 'director', center || null, can_manage !== false, can_view_all || false, also_staff_id || null]
+    );
+    res.json(rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/directors/:id', async (req, res) => {
+  try {
+    const { name, pin, role, center, can_manage, can_view_all, also_staff_id } = req.body;
+    const { rows } = await pool.query(
+      `UPDATE directors SET name=COALESCE($1,name), pin=COALESCE($2,pin), role=COALESCE($3,role),
+       center=$4, can_manage=COALESCE($5,can_manage), can_view_all=COALESCE($6,can_view_all),
+       also_staff_id=$7 WHERE id=$8 RETURNING *`,
+      [name, pin, role, center, can_manage, can_view_all, also_staff_id || null, req.params.id]
+    );
+    res.json(rows[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/directors/:id', async (req, res) => {
+  try {
+    await pool.query('UPDATE directors SET is_active=false WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ── STAFF LIST ──
@@ -193,12 +254,15 @@ app.post('/api/signature', async (req, res) => {
 // ── MANAGEMENT ──
 app.get('/api/manage/staff', async (req, res) => {
   try {
-    const { rows } = await pool.query(
-      `SELECT s.id, s.name, s.center, s.hourly_rate, s.is_active,
+    const { center } = req.query;
+    let q = `SELECT s.id, s.name, s.center, s.hourly_rate, s.is_active,
               sp.pin, sp.role
        FROM staff s LEFT JOIN staff_pins sp ON sp.staff_id = s.id
-       WHERE s.is_active = true ORDER BY s.center, s.name`
-    );
+       WHERE s.is_active = true`;
+    const params = [];
+    if (center) { params.push(center); q += ` AND s.center=$${params.length}`; }
+    q += ' ORDER BY s.center, s.name';
+    const { rows } = await pool.query(q, params);
     res.json(rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -253,8 +317,8 @@ app.get('/api/manage/monthly-status', async (req, res) => {
     const fy = fyRes.rows[0];
     if (!fy) return res.json({ staff: [] });
     const mk = req.query.month_key || monthKeyFromDate();
-    const { rows } = await pool.query(
-      `SELECT s.id, s.name, s.center,
+    const center = req.query.center || null;
+    let q = `SELECT s.id, s.name, s.center,
               ms.status, ms.employee_signature, ms.employee_signed_at,
               COALESCE((SELECT SUM(d.food_service_hours) FROM daily_cacfp_entries d
                 WHERE d.staff_id=s.id AND d.fiscal_year_id=$1 AND d.month_key=$2),0) as total_fs,
@@ -264,9 +328,11 @@ app.get('/api/manage/monthly-status', async (req, res) => {
                 WHERE d.staff_id=s.id AND d.fiscal_year_id=$1 AND d.month_key=$2 AND d.food_service_hours>0) as days_entered
        FROM staff s JOIN staff_pins sp ON sp.staff_id=s.id
        LEFT JOIN monthly_signatures ms ON ms.staff_id=s.id AND ms.fiscal_year_id=$1 AND ms.month_key=$2
-       WHERE s.is_active=true ORDER BY s.center, s.name`,
-      [fy.id, mk]
-    );
+       WHERE s.is_active=true`;
+    const params = [fy.id, mk];
+    if (center) { params.push(center); q += ` AND s.center=$${params.length}`; }
+    q += ' ORDER BY s.center, s.name';
+    const { rows } = await pool.query(q, params);
     res.json({ fiscal_year: fy, month_key: mk, staff: rows });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -276,6 +342,22 @@ app.get('/api/fiscal-year', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM fiscal_years WHERE is_active=true LIMIT 1');
     res.json(rows[0] || null);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── BOOTSTRAP — First-time setup (only works when no directors exist) ──
+app.post('/api/bootstrap', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT COUNT(*) as cnt FROM directors WHERE is_active = true');
+    if (parseInt(rows[0].cnt) > 0) return res.status(403).json({ error: 'Directors already exist. Use the Directors tab to manage accounts.' });
+    const { name, pin } = req.body;
+    if (!name || !pin) return res.status(400).json({ error: 'Name and PIN required' });
+    const { rows: created } = await pool.query(
+      `INSERT INTO directors (name, pin, role, center, can_manage, can_view_all)
+       VALUES ($1, $2, 'owner', NULL, true, true) RETURNING *`,
+      [name, pin]
+    );
+    res.json({ ok: true, message: `Owner account created for ${name}. You can now log in.`, director: created[0] });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
