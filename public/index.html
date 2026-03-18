@@ -209,7 +209,7 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bot
           <option value="peace">Peace Boulevard</option>
         </select>
       </div>
-      <div class="field-group">
+      <div class="field-group" id="rateFieldGroup">
         <label>Hourly rate ($)</label>
         <input type="number" id="newStaffRate" step="0.01" placeholder="15.00" style="text-align:left;font-size:16px">
       </div>
@@ -514,6 +514,7 @@ async function saveDayEntry(day,fsVal,admVal){
     // Update the day-row class
     const rows=document.querySelectorAll('.day-row');
     if(rows[day-1]){rows[day-1].classList.toggle('has-value',parseFloat(fsVal)>0);}
+    renderSignature();
     showToast('Saved','ok');
   }catch(e){showToast('Save failed','err');}
 }
@@ -644,18 +645,23 @@ async function loadMonthlyStatus(){
 }
 
 // ── ROSTER MANAGEMENT ──
+function canSeeWages(){return currentDirector&&(currentDirector.role==='owner'||currentDirector.role==='admin');}
+function canEnterWages(){return currentDirector&&(currentDirector.role==='owner'||currentDirector.role==='admin'||currentDirector.role==='hr');}
+
 async function loadRoster(){
   try{
     const centerParam=dirCenter!=='all'?`?center=${dirCenter}`:'';
     const staff=await api('/api/manage/staff'+centerParam);
+    const showWage=canSeeWages();
     let html='';
     for(const s of staff){
       const centerLabel=s.center==='niles'?'Niles':'Peace';
       const hasPin=!!s.pin;
+      const wageText=showWage?` $${parseFloat(s.hourly_rate||0).toFixed(2)}/hr`:'';
       html+=`<div class="roster-row">
         <div>
           <div class="name">${s.name}</div>
-          <div class="detail"><span class="center-badge">${centerLabel}</span> $${parseFloat(s.hourly_rate||0).toFixed(2)}/hr ${hasPin?'<span style="color:var(--success)">PIN set</span>':'<span style="color:var(--error)">No PIN</span>'} ${s.role==='admin'?'<span style="color:var(--info)">(Admin)</span>':''}</div>
+          <div class="detail"><span class="center-badge">${centerLabel}</span>${wageText} ${hasPin?'<span style="color:var(--success)">PIN set</span>':'<span style="color:var(--error)">No PIN</span>'} ${s.role==='admin'?'<span style="color:var(--info)">(Admin)</span>':''}</div>
         </div>
         <div class="actions">
           <button class="btn btn-sm btn-outline" onclick="editStaff(${s.id},'${s.name.replace("'","\\'")}','${s.center}',${s.hourly_rate||0},'${s.pin||''}','${s.role||'staff'}')">Edit</button>
@@ -675,6 +681,8 @@ function showAddStaff(){
   document.getElementById('newStaffPin').value='';
   document.getElementById('newStaffRole').value='staff';
   document.getElementById('addStaffForm').style.display='block';
+  // Show/hide wage field based on role
+  document.getElementById('rateFieldGroup').style.display=canEnterWages()?'block':'none';
 }
 
 function editStaff(id,name,center,rate,pin,role){
@@ -682,10 +690,13 @@ function editStaff(id,name,center,rate,pin,role){
   document.getElementById('editStaffId').value=id;
   document.getElementById('newStaffName').value=name;
   document.getElementById('newStaffCenter').value=center;
-  document.getElementById('newStaffRate').value=rate;
+  document.getElementById('newStaffRate').value=canSeeWages()?rate:'';
   document.getElementById('newStaffPin').value=pin;
   document.getElementById('newStaffRole').value=role;
   document.getElementById('addStaffForm').style.display='block';
+  // Show/hide wage field: owner/admin see and edit, HR sees on add only (blank on edit), directors never
+  document.getElementById('rateFieldGroup').style.display=canEnterWages()?'block':'none';
+  if(!canSeeWages())document.getElementById('newStaffRate').value='';
 }
 
 function hideAddStaff(){document.getElementById('addStaffForm').style.display='none';}
@@ -694,19 +705,23 @@ async function saveStaff(){
   const id=document.getElementById('editStaffId').value;
   const name=document.getElementById('newStaffName').value.trim();
   const center=document.getElementById('newStaffCenter').value;
-  const rate=parseFloat(document.getElementById('newStaffRate').value)||0;
+  const rateInput=document.getElementById('newStaffRate').value;
+  const rate=parseFloat(rateInput)||0;
   const pin=document.getElementById('newStaffPin').value.trim();
   const role=document.getElementById('newStaffRole').value;
   if(!name){showToast('Enter a name','err');return;}
-  if(!pin||pin.length<4){showToast('PIN must be at least 4 digits','err');return;}
+  if(!pin||pin.length<4){showToast('PIN must be at least 4 characters','err');return;}
 
   try{
     if(id){
       // Update existing
       await api(`/api/manage/staff/${id}/pin`,{method:'PUT',body:{pin,role}});
-      await api(`/api/manage/staff/${id}/rate`,{method:'PUT',body:{hourly_rate:rate}});
+      // Only update rate if user can enter wages and actually entered a value
+      if(canEnterWages()&&rateInput!==''){
+        await api(`/api/manage/staff/${id}/rate`,{method:'PUT',body:{hourly_rate:rate}});
+      }
     }else{
-      await api('/api/manage/staff',{method:'POST',body:{name,center,hourly_rate:rate,pin,role}});
+      await api('/api/manage/staff',{method:'POST',body:{name,center,hourly_rate:canEnterWages()?rate:0,pin,role}});
     }
     hideAddStaff();loadRoster();loadStaffList();
     showToast(id?'Updated!':'Added!','ok');
