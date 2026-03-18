@@ -100,12 +100,27 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bot
     <button class="btn btn-navy" onclick="staffLogin()">Sign In</button>
   </div>
   <div class="card">
-    <h3>Director / Admin</h3>
+    <h3>Director / Admin sign in</h3>
     <div class="field-group">
-      <label>Director or Admin PIN</label>
+      <label>Your PIN</label>
       <input type="password" id="dirPin" maxlength="20" placeholder="****">
     </div>
     <button class="btn btn-outline" onclick="directorLogin()">Director Sign In</button>
+  </div>
+
+  <!-- First-time setup (only shows when no directors exist) -->
+  <div class="card" id="bootstrapCard" style="display:none;border-color:var(--gold)">
+    <h3 style="color:var(--gold)">First-time setup</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px">No director accounts exist yet. Create the owner account to get started.</p>
+    <div class="field-group">
+      <label>Your name</label>
+      <input type="text" id="bootstrapName" placeholder="Mary Wardlaw">
+    </div>
+    <div class="field-group">
+      <label>Choose your PIN</label>
+      <input type="text" id="bootstrapPin" maxlength="20" placeholder="Choose a PIN">
+    </div>
+    <button class="btn btn-gold" onclick="bootstrap()">Create Owner Account</button>
   </div>
 </div>
 
@@ -149,9 +164,10 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bot
     <button class="btn btn-sm btn-outline" onclick="logout()">Sign Out</button>
   </div>
 
-  <div class="pill-tabs">
+  <div class="pill-tabs" id="dirMainTabs">
     <div class="pill-tab active" onclick="dirTab('status')">Monthly Status</div>
     <div class="pill-tab" onclick="dirTab('roster')">Manage Staff</div>
+    <div class="pill-tab" id="dirMgmtTab" style="display:none" onclick="dirTab('directors')">Directors</div>
   </div>
 
   <!-- Monthly Status Tab -->
@@ -162,10 +178,7 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bot
       <button onclick="dirChangeMonth(1)">&rsaquo;</button>
     </div>
 
-    <div class="pill-tabs" style="margin-bottom:12px">
-      <div class="pill-tab active" onclick="dirCenterFilter('all')">All</div>
-      <div class="pill-tab" onclick="dirCenterFilter('niles')">Niles</div>
-      <div class="pill-tab" onclick="dirCenterFilter('peace')">Peace</div>
+    <div class="pill-tabs" id="dirCenterTabs" style="margin-bottom:12px">
     </div>
 
     <div class="card" id="dirStatusList">Loading...</div>
@@ -201,7 +214,7 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bot
         <input type="number" id="newStaffRate" step="0.01" placeholder="15.00" style="text-align:left;font-size:16px">
       </div>
       <div class="field-group">
-        <label>PIN (4-6 digits)</label>
+        <label>PIN (4-10 characters)</label>
         <input type="text" id="newStaffPin" maxlength="10" placeholder="1234">
       </div>
       <div class="field-group">
@@ -215,6 +228,53 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bot
       <button class="btn btn-outline" onclick="hideAddStaff()">Cancel</button>
     </div>
   </div>
+
+  <!-- Director Management Tab (owner only) -->
+  <div id="dirDirectorsTab" style="display:none">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="margin:0">Director accounts</h3>
+        <button class="btn btn-sm btn-navy" onclick="showAddDirector()">+ Add</button>
+      </div>
+      <div id="directorsList">Loading...</div>
+    </div>
+    <div class="card" id="addDirectorForm" style="display:none">
+      <h3 id="addDirTitle">Add director</h3>
+      <input type="hidden" id="editDirId">
+      <div class="field-group">
+        <label>Name</label>
+        <input type="text" id="newDirName" placeholder="Full name">
+      </div>
+      <div class="field-group">
+        <label>PIN</label>
+        <input type="text" id="newDirPin" maxlength="20" placeholder="Enter PIN">
+      </div>
+      <div class="field-group">
+        <label>Role</label>
+        <select id="newDirRole" onchange="dirRoleChanged()">
+          <option value="owner">Owner (all locations, full access)</option>
+          <option value="admin">Admin (all locations, manages staff + enters own hours)</option>
+          <option value="hr">HR (all locations, manages staff only)</option>
+          <option value="director">Program Director (one location only)</option>
+        </select>
+      </div>
+      <div class="field-group" id="dirCenterField">
+        <label>Center (for program directors)</label>
+        <select id="newDirCenter">
+          <option value="">All locations</option>
+          <option value="niles">Niles</option>
+          <option value="peace">Peace Boulevard</option>
+          <option value="montessori">Montessori</option>
+        </select>
+      </div>
+      <div class="field-group" id="dirStaffLinkField" style="display:none">
+        <label>Link to staff record (for admin who enters own hours)</label>
+        <select id="newDirStaffLink"><option value="">None</option></select>
+      </div>
+      <button class="btn btn-navy" onclick="saveDirector()">Save</button>
+      <button class="btn btn-outline" onclick="hideAddDirector()">Cancel</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -225,7 +285,7 @@ const MO=['oct','nov','dec','jan','feb','mar','apr','may','jun','jul','aug','sep
 const DAYS_IN={oct:31,nov:30,dec:31,jan:31,feb:28,mar:31,apr:30,may:31,jun:30,jul:31,aug:31,sep:30};
 const DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-let currentUser=null,currentRole=null,activeFY=null;
+let currentUser=null,currentRole=null,activeFY=null,currentDirector=null;
 let staffMonth=null,staffMonthIdx=0;
 let dirMonth=null,dirMonthIdx=0,dirCenter='all';
 let dailyEntries=[],signatureData=null;
@@ -236,7 +296,27 @@ async function init(){
     activeFY=await api('/api/fiscal-year');
     if(!activeFY){showToast('No active fiscal year configured','err');return;}
     await loadStaffList();
+    // Check if any directors exist — if not, show bootstrap
+    try{
+      const dirs=await api('/api/directors');
+      if(!dirs||dirs.length===0){
+        document.getElementById('bootstrapCard').style.display='block';
+      }
+    }catch(e){
+      document.getElementById('bootstrapCard').style.display='block';
+    }
   }catch(e){showToast('Connection error','err');}
+}
+
+async function bootstrap(){
+  const name=document.getElementById('bootstrapName').value.trim();
+  const pin=document.getElementById('bootstrapPin').value.trim();
+  if(!name||!pin){showToast('Enter your name and choose a PIN','err');return;}
+  try{
+    await api('/api/bootstrap',{method:'POST',body:{name,pin}});
+    document.getElementById('bootstrapCard').style.display='none';
+    showToast('Owner account created! Sign in with your PIN.','ok');
+  }catch(e){showToast(e.message,'err');}
 }
 
 async function loadStaffList(){
@@ -272,17 +352,47 @@ async function directorLogin(){
   if(!pin){showToast('Enter PIN','err');return;}
   try{
     const res=await api('/api/director-login',{method:'POST',body:{pin}});
-    currentRole=res.role;
-    document.getElementById('dirGreeting').textContent=res.role==='admin'?'Admin Dashboard':'Director Dashboard';
-    document.getElementById('dirRole').textContent=res.role==='admin'?'Full access':'Staff management';
+    currentDirector=res;currentRole=res.role;
+    document.getElementById('dirGreeting').textContent='Hello, '+res.name.split(' ')[0]+'!';
+    const roleLabels={owner:'Owner — All locations',admin:'Admin — All locations',hr:'HR — All locations',director:'Program Director'};
+    let roleText=roleLabels[res.role]||res.role;
+    if(res.role==='director'&&res.center){
+      const cl={niles:'Niles',peace:'Peace Boulevard',montessori:'Montessori'};
+      roleText+=' — '+(cl[res.center]||res.center);
+    }
+    document.getElementById('dirRole').textContent=roleText;
+
+    // Show/hide tabs based on role
+    document.getElementById('dirMgmtTab').style.display=(res.role==='owner')?'block':'none';
+
+    // Set center filter based on access
+    if(res.can_view_all||res.role==='owner'||res.role==='admin'||res.role==='hr'){
+      dirCenter='all';
+      document.getElementById('dirCenterTabs').innerHTML=`
+        <div class="pill-tab active" onclick="dirCenterFilter('all')">All</div>
+        <div class="pill-tab" onclick="dirCenterFilter('niles')">Niles</div>
+        <div class="pill-tab" onclick="dirCenterFilter('peace')">Peace</div>`;
+    }else{
+      dirCenter=res.center;
+      const cl={niles:'Niles',peace:'Peace Boulevard',montessori:'Montessori'};
+      document.getElementById('dirCenterTabs').innerHTML=`
+        <div class="pill-tab active">${cl[res.center]||res.center}</div>`;
+    }
+
+    // If admin with linked staff, also allow time entry
+    if(res.role==='admin'&&res.also_staff_id){
+      currentUser={staff_id:res.also_staff_id,name:res.name,center:'both',role:'admin'};
+    }
+
     initDirMonth();
     showScreen('dirScreen');
     loadMonthlyStatus();loadRoster();
+    if(res.role==='owner')loadDirectors();
   }catch(e){showToast('Invalid PIN','err');}
 }
 
 function logout(){
-  currentUser=null;currentRole=null;
+  currentUser=null;currentRole=null;currentDirector=null;
   document.getElementById('loginPin').value='';
   document.getElementById('dirPin').value='';
   showScreen('loginScreen');
@@ -447,11 +557,13 @@ function dirChangeMonth(dir){
 }
 
 function dirTab(tab){
-  document.querySelectorAll('.pill-tabs .pill-tab').forEach((t,i)=>{
-    if(i<2)t.classList.toggle('active',i===(tab==='status'?0:1));
+  document.querySelectorAll('#dirMainTabs .pill-tab').forEach(t=>{
+    t.classList.toggle('active',t.textContent.toLowerCase().includes(tab.substring(0,4)));
   });
   document.getElementById('dirStatusTab').style.display=tab==='status'?'block':'none';
   document.getElementById('dirRosterTab').style.display=tab==='roster'?'block':'none';
+  document.getElementById('dirDirectorsTab').style.display=tab==='directors'?'block':'none';
+  if(tab==='directors')loadDirectors();
 }
 
 function dirCenterFilter(c){
@@ -465,11 +577,11 @@ function dirCenterFilter(c){
 
 async function loadMonthlyStatus(){
   try{
-    const data=await api(`/api/manage/monthly-status?month_key=${dirMonth}`);
+    const centerParam=dirCenter!=='all'?`&center=${dirCenter}`:'';
+    const data=await api(`/api/manage/monthly-status?month_key=${dirMonth}${centerParam}`);
     const yr=fyYear(dirMonth);
     document.getElementById('dirMonthLabel').textContent=ML[dirMonth]+' '+yr;
     let staff=data.staff||[];
-    if(dirCenter!=='all')staff=staff.filter(s=>s.center===dirCenter);
 
     const submitted=staff.filter(s=>s.status==='submitted').length;
     const total=staff.length;
@@ -512,7 +624,8 @@ async function loadMonthlyStatus(){
 // ── ROSTER MANAGEMENT ──
 async function loadRoster(){
   try{
-    const staff=await api('/api/manage/staff');
+    const centerParam=dirCenter!=='all'?`?center=${dirCenter}`:'';
+    const staff=await api('/api/manage/staff'+centerParam);
     let html='';
     for(const s of staff){
       const centerLabel=s.center==='niles'?'Niles':'Peace';
@@ -583,6 +696,102 @@ async function removeStaff(id,name){
   try{
     await api(`/api/manage/staff/${id}/deactivate`,{method:'PUT'});
     loadRoster();loadStaffList();showToast(name+' removed','ok');
+  }catch(e){showToast('Error','err');}
+}
+
+// ── DIRECTOR MANAGEMENT (owner only) ──
+async function loadDirectors(){
+  try{
+    const dirs=await api('/api/directors');
+    const roleLabels={owner:'Owner',admin:'Admin',hr:'HR',director:'Director'};
+    const centerLabels={niles:'Niles',peace:'Peace Blvd',montessori:'Montessori'};
+    let html='';
+    for(const d of dirs){
+      html+=`<div class="roster-row">
+        <div>
+          <div class="name">${d.name}</div>
+          <div class="detail">${roleLabels[d.role]||d.role} ${d.center?'— '+(centerLabels[d.center]||d.center):'— All locations'}</div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-sm btn-outline" onclick='editDirector(${JSON.stringify(d)})'>Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="removeDirector(${d.id},'${d.name.replace(/'/g,"\\'")}')">Remove</button>
+        </div>
+      </div>`;
+    }
+    document.getElementById('directorsList').innerHTML=html||'<p style="color:var(--muted);text-align:center">No directors set up yet. Add yourself first!</p>';
+  }catch(e){}
+}
+
+function showAddDirector(){
+  document.getElementById('addDirTitle').textContent='Add director';
+  document.getElementById('editDirId').value='';
+  document.getElementById('newDirName').value='';
+  document.getElementById('newDirPin').value='';
+  document.getElementById('newDirRole').value='director';
+  document.getElementById('newDirCenter').value='';
+  document.getElementById('addDirectorForm').style.display='block';
+  dirRoleChanged();
+  loadStaffLinkOptions();
+}
+
+function editDirector(d){
+  document.getElementById('addDirTitle').textContent='Edit '+d.name;
+  document.getElementById('editDirId').value=d.id;
+  document.getElementById('newDirName').value=d.name;
+  document.getElementById('newDirPin').value=d.pin;
+  document.getElementById('newDirRole').value=d.role;
+  document.getElementById('newDirCenter').value=d.center||'';
+  document.getElementById('addDirectorForm').style.display='block';
+  dirRoleChanged();
+  loadStaffLinkOptions(d.also_staff_id);
+}
+
+function hideAddDirector(){document.getElementById('addDirectorForm').style.display='none';}
+
+function dirRoleChanged(){
+  const role=document.getElementById('newDirRole').value;
+  document.getElementById('dirCenterField').style.display=(role==='director')?'block':'none';
+  document.getElementById('dirStaffLinkField').style.display=(role==='admin')?'block':'none';
+}
+
+async function loadStaffLinkOptions(selectedId){
+  try{
+    const staff=await api('/api/all-staff');
+    const sel=document.getElementById('newDirStaffLink');
+    sel.innerHTML='<option value="">None</option>'+staff.map(s=>
+      `<option value="${s.id}" ${s.id==selectedId?'selected':''}>${s.name} (${s.center})</option>`
+    ).join('');
+  }catch(e){}
+}
+
+async function saveDirector(){
+  const id=document.getElementById('editDirId').value;
+  const name=document.getElementById('newDirName').value.trim();
+  const pin=document.getElementById('newDirPin').value.trim();
+  const role=document.getElementById('newDirRole').value;
+  const center=role==='director'?document.getElementById('newDirCenter').value:null;
+  const also_staff_id=role==='admin'?parseInt(document.getElementById('newDirStaffLink').value)||null:null;
+  const can_view_all=role!=='director';
+  const can_manage=true;
+
+  if(!name||!pin){showToast('Name and PIN required','err');return;}
+  if(role==='director'&&!center){showToast('Select a center for program directors','err');return;}
+
+  try{
+    if(id){
+      await api(`/api/directors/${id}`,{method:'PUT',body:{name,pin,role,center,can_manage,can_view_all,also_staff_id}});
+    }else{
+      await api('/api/directors',{method:'POST',body:{name,pin,role,center,can_manage,can_view_all,also_staff_id}});
+    }
+    hideAddDirector();loadDirectors();showToast(id?'Updated!':'Added!','ok');
+  }catch(e){showToast('Error: '+e.message,'err');}
+}
+
+async function removeDirector(id,name){
+  if(!confirm(`Remove ${name}'s director access?`))return;
+  try{
+    await api(`/api/directors/${id}`,{method:'DELETE'});
+    loadDirectors();showToast(name+' removed','ok');
   }catch(e){showToast('Error','err');}
 }
 
