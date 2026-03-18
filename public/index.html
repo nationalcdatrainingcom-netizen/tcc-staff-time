@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>TCC CACFP Time Entry</title>
+<style>
+:root{--navy:#1B2A4A;--gold:#C5972C;--bg:#f4f3f0;--card:#fff;--border:#e0ddd5;--muted:#888;--success:#2e7d32;--error:#c62828;--info:#1565c0;--radius:12px;--font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:#333;min-height:100vh;-webkit-tap-highlight-color:transparent}
+.screen{display:none;padding:16px;max-width:480px;margin:0 auto}
+.screen.active{display:block}
+.header{background:var(--navy);color:#fff;padding:16px;text-align:center;position:sticky;top:0;z-index:10}
+.header h1{font-size:16px;font-weight:600;margin-bottom:2px}
+.header .sub{font-size:12px;opacity:.7}
+.header .back-btn{position:absolute;left:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:8px}
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:16px;margin-bottom:12px}
+.card h3{font-size:15px;font-weight:600;margin-bottom:12px;color:var(--navy)}
+.btn{display:block;width:100%;padding:14px;border-radius:var(--radius);border:none;font-size:15px;font-weight:600;cursor:pointer;text-align:center;margin-bottom:8px;transition:opacity .15s}
+.btn:active{opacity:.7}
+.btn-navy{background:var(--navy);color:#fff}
+.btn-gold{background:var(--gold);color:#fff}
+.btn-outline{background:#fff;color:var(--navy);border:1.5px solid var(--navy)}
+.btn-success{background:var(--success);color:#fff}
+.btn-danger{background:var(--error);color:#fff}
+.btn-sm{display:inline-block;width:auto;padding:8px 16px;font-size:13px}
+input,select{width:100%;padding:12px;border:1.5px solid var(--border);border-radius:8px;font-size:16px;font-family:var(--font);background:#fff;-webkit-appearance:none}
+input:focus,select:focus{outline:none;border-color:var(--navy)}
+input[type=number]{text-align:center;font-size:20px;font-weight:600;padding:10px}
+label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:4px}
+.field-group{margin-bottom:14px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 24px;border-radius:25px;font-size:14px;z-index:100;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+.toast.err{background:var(--error)}
+.toast.ok{background:var(--success)}
+.center-badge{display:inline-block;font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;background:#e3f2fd;color:var(--info)}
+.status-badge{display:inline-block;font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px}
+.status-badge.submitted{background:#e8f5e9;color:var(--success)}
+.status-badge.in_progress{background:#fff3e0;color:#e65100}
+.status-badge.none{background:#f5f5f5;color:var(--muted)}
+.day-row{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #f0eeea}
+.day-row .day-num{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;background:#f0eeea;color:#555;flex-shrink:0}
+.day-row .day-num.today{background:var(--navy);color:#fff}
+.day-row .day-num.weekend{background:transparent;color:#bbb}
+.day-row .day-name{width:36px;font-size:12px;color:var(--muted);flex-shrink:0}
+.day-row .day-input{flex:1}
+.day-row .day-input input{padding:8px;font-size:18px;height:40px}
+.day-row .day-val{font-size:16px;font-weight:600;color:var(--navy);min-width:40px;text-align:right}
+.day-row.has-value .day-num{background:var(--success);color:#fff}
+.month-total{background:var(--navy);color:#fff;padding:16px;border-radius:var(--radius);text-align:center;margin:12px 0}
+.month-total .big{font-size:28px;font-weight:700}
+.month-total .lbl{font-size:12px;opacity:.7;margin-top:2px}
+.sig-box{background:#fafaf8;border:2px dashed var(--border);border-radius:var(--radius);padding:20px;text-align:center;margin:12px 0}
+.sig-box.signed{border-color:var(--success);border-style:solid;background:#f0faf0}
+.sig-box .sig-name{font-size:20px;font-style:italic;font-weight:500;color:var(--navy);margin-top:8px}
+.roster-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f0eeea}
+.roster-row .name{font-weight:500;font-size:15px}
+.roster-row .detail{font-size:12px;color:var(--muted)}
+.roster-row .actions{display:flex;gap:6px}
+.pill-tabs{display:flex;gap:4px;background:#f0eeea;border-radius:8px;padding:3px;margin-bottom:16px}
+.pill-tab{flex:1;text-align:center;padding:8px;font-size:13px;font-weight:600;border-radius:6px;cursor:pointer;color:var(--muted);transition:all .2s}
+.pill-tab.active{background:var(--card);color:var(--navy);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.month-picker{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.month-picker .month-label{font-size:16px;font-weight:600}
+.month-picker button{background:none;border:none;font-size:20px;cursor:pointer;padding:8px;color:var(--navy)}
+.staff-status-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f0eeea}
+.staff-status-row .info{flex:1}
+.staff-status-row .info .name{font-weight:500;font-size:14px}
+.staff-status-row .info .meta{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="header" id="appHeader">
+  <h1>TCC CACFP Time Entry</h1>
+  <div class="sub">The Children's Center</div>
+</div>
+
+<!-- LOGIN SCREEN -->
+<div class="screen active" id="loginScreen">
+  <div style="padding-top:20px;text-align:center">
+    <div style="width:60px;height:60px;background:var(--navy);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+      <span style="color:var(--gold);font-size:24px;font-weight:700">T</span>
+    </div>
+    <h2 style="font-size:18px;margin-bottom:4px">CACFP Time Entry</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:24px">Enter your daily food service hours</p>
+  </div>
+  <div class="card">
+    <h3>Staff sign in</h3>
+    <div class="field-group">
+      <label>Select your name</label>
+      <select id="loginStaffSelect"><option value="">Loading...</option></select>
+    </div>
+    <div class="field-group">
+      <label>Enter your PIN</label>
+      <input type="password" id="loginPin" inputmode="numeric" maxlength="6" placeholder="****">
+    </div>
+    <button class="btn btn-navy" onclick="staffLogin()">Sign In</button>
+  </div>
+  <div class="card">
+    <h3>Director / Admin</h3>
+    <div class="field-group">
+      <label>Director or Admin PIN</label>
+      <input type="password" id="dirPin" inputmode="numeric" maxlength="10" placeholder="****">
+    </div>
+    <button class="btn btn-outline" onclick="directorLogin()">Director Sign In</button>
+  </div>
+</div>
+
+<!-- STAFF TIME ENTRY SCREEN -->
+<div class="screen" id="staffScreen">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <div>
+      <div style="font-size:17px;font-weight:600" id="staffGreeting">Hello!</div>
+      <div style="font-size:12px;color:var(--muted)" id="staffCenter"></div>
+    </div>
+    <button class="btn btn-sm btn-outline" onclick="logout()">Sign Out</button>
+  </div>
+
+  <div class="month-picker">
+    <button onclick="changeMonth(-1)">&lsaquo;</button>
+    <span class="month-label" id="staffMonthLabel">February 2026</span>
+    <button onclick="changeMonth(1)">&rsaquo;</button>
+  </div>
+
+  <div class="month-total">
+    <div class="big" id="staffTotalHours">0</div>
+    <div class="lbl">Total CACFP food service hours this month</div>
+  </div>
+
+  <div class="card" id="daysContainer">
+    <!-- Day rows injected here -->
+  </div>
+
+  <div id="sigSection">
+    <!-- Signature section injected here -->
+  </div>
+</div>
+
+<!-- DIRECTOR/ADMIN SCREEN -->
+<div class="screen" id="dirScreen">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div>
+      <div style="font-size:17px;font-weight:600" id="dirGreeting">Director Dashboard</div>
+      <div style="font-size:12px;color:var(--muted)" id="dirRole"></div>
+    </div>
+    <button class="btn btn-sm btn-outline" onclick="logout()">Sign Out</button>
+  </div>
+
+  <div class="pill-tabs">
+    <div class="pill-tab active" onclick="dirTab('status')">Monthly Status</div>
+    <div class="pill-tab" onclick="dirTab('roster')">Manage Staff</div>
+  </div>
+
+  <!-- Monthly Status Tab -->
+  <div id="dirStatusTab">
+    <div class="month-picker">
+      <button onclick="dirChangeMonth(-1)">&lsaquo;</button>
+      <span class="month-label" id="dirMonthLabel">February 2026</span>
+      <button onclick="dirChangeMonth(1)">&rsaquo;</button>
+    </div>
+
+    <div class="pill-tabs" style="margin-bottom:12px">
+      <div class="pill-tab active" onclick="dirCenterFilter('all')">All</div>
+      <div class="pill-tab" onclick="dirCenterFilter('niles')">Niles</div>
+      <div class="pill-tab" onclick="dirCenterFilter('peace')">Peace</div>
+    </div>
+
+    <div class="card" id="dirStatusList">Loading...</div>
+  </div>
+
+  <!-- Manage Staff Tab -->
+  <div id="dirRosterTab" style="display:none">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="margin:0">Staff roster</h3>
+        <button class="btn btn-sm btn-navy" onclick="showAddStaff()">+ Add</button>
+      </div>
+      <div id="rosterList">Loading...</div>
+    </div>
+
+    <!-- Add/Edit Staff Form -->
+    <div class="card" id="addStaffForm" style="display:none">
+      <h3 id="addStaffTitle">Add new staff</h3>
+      <input type="hidden" id="editStaffId">
+      <div class="field-group">
+        <label>Full name</label>
+        <input type="text" id="newStaffName" placeholder="First Last">
+      </div>
+      <div class="field-group">
+        <label>Center</label>
+        <select id="newStaffCenter">
+          <option value="niles">Niles</option>
+          <option value="peace">Peace Boulevard</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Hourly rate ($)</label>
+        <input type="number" id="newStaffRate" step="0.01" placeholder="15.00" style="text-align:left;font-size:16px">
+      </div>
+      <div class="field-group">
+        <label>PIN (4-6 digits)</label>
+        <input type="text" id="newStaffPin" inputmode="numeric" maxlength="6" placeholder="1234">
+      </div>
+      <div class="field-group">
+        <label>Role</label>
+        <select id="newStaffRole">
+          <option value="staff">Staff</option>
+          <option value="admin">Admin (sees admin hours)</option>
+        </select>
+      </div>
+      <button class="btn btn-navy" onclick="saveStaff()">Save</button>
+      <button class="btn btn-outline" onclick="hideAddStaff()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const ML={oct:'October',nov:'November',dec:'December',jan:'January',feb:'February',mar:'March',apr:'April',may:'May',jun:'June',jul:'July',aug:'August',sep:'September'};
+const MO=['oct','nov','dec','jan','feb','mar','apr','may','jun','jul','aug','sep'];
+const DAYS_IN={oct:31,nov:30,dec:31,jan:31,feb:28,mar:31,apr:30,may:31,jun:30,jul:31,aug:31,sep:30};
+const DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+let currentUser=null,currentRole=null,activeFY=null;
+let staffMonth=null,staffMonthIdx=0;
+let dirMonth=null,dirMonthIdx=0,dirCenter='all';
+let dailyEntries=[],signatureData=null;
+
+// ── INIT ──
+async function init(){
+  try{
+    activeFY=await api('/api/fiscal-year');
+    if(!activeFY){showToast('No active fiscal year configured','err');return;}
+    await loadStaffList();
+  }catch(e){showToast('Connection error','err');}
+}
+
+async function loadStaffList(){
+  try{
+    const staff=await api('/api/staff-list');
+    const sel=document.getElementById('loginStaffSelect');
+    sel.innerHTML='<option value="">— Select your name —</option>';
+    const niles=staff.filter(s=>s.center==='niles');
+    const peace=staff.filter(s=>s.center==='peace');
+    if(niles.length){sel.innerHTML+=`<optgroup label="Niles">${niles.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}</optgroup>`;}
+    if(peace.length){sel.innerHTML+=`<optgroup label="Peace Boulevard">${peace.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}</optgroup>`;}
+    if(!staff.length)sel.innerHTML='<option value="">No staff set up yet</option>';
+  }catch(e){}
+}
+
+// ── AUTH ──
+async function staffLogin(){
+  const id=document.getElementById('loginStaffSelect').value;
+  const pin=document.getElementById('loginPin').value;
+  if(!id||!pin){showToast('Select your name and enter PIN','err');return;}
+  try{
+    const res=await api('/api/staff-login',{method:'POST',body:{staff_id:parseInt(id),pin}});
+    currentUser=res;currentRole=res.role;
+    document.getElementById('staffGreeting').textContent='Hello, '+res.name.split(' ')[0]+'!';
+    document.getElementById('staffCenter').textContent=(res.center==='niles'?'Niles':'Peace Boulevard');
+    initStaffMonth();
+    showScreen('staffScreen');
+  }catch(e){showToast('Invalid PIN','err');}
+}
+
+async function directorLogin(){
+  const pin=document.getElementById('dirPin').value;
+  if(!pin){showToast('Enter PIN','err');return;}
+  try{
+    const res=await api('/api/director-login',{method:'POST',body:{pin}});
+    currentRole=res.role;
+    document.getElementById('dirGreeting').textContent=res.role==='admin'?'Admin Dashboard':'Director Dashboard';
+    document.getElementById('dirRole').textContent=res.role==='admin'?'Full access':'Staff management';
+    initDirMonth();
+    showScreen('dirScreen');
+    loadMonthlyStatus();loadRoster();
+  }catch(e){showToast('Invalid PIN','err');}
+}
+
+function logout(){
+  currentUser=null;currentRole=null;
+  document.getElementById('loginPin').value='';
+  document.getElementById('dirPin').value='';
+  showScreen('loginScreen');
+}
+
+// ── STAFF TIME ENTRY ──
+function initStaffMonth(){
+  const now=new Date();
+  const m=now.getMonth();
+  const months=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  staffMonth=months[m];
+  staffMonthIdx=MO.indexOf(staffMonth);
+  loadStaffMonth();
+}
+
+function changeMonth(dir){
+  staffMonthIdx=Math.max(0,Math.min(MO.length-1,staffMonthIdx+dir));
+  staffMonth=MO[staffMonthIdx];
+  loadStaffMonth();
+}
+
+async function loadStaffMonth(){
+  const mk=staffMonth;
+  const year=fyYear(mk);
+  document.getElementById('staffMonthLabel').textContent=ML[mk]+' '+year;
+
+  try{
+    dailyEntries=await api(`/api/daily-entries/${currentUser.staff_id}?fiscal_year_id=${activeFY.id}&month_key=${mk}`);
+    signatureData=await api(`/api/signature/${currentUser.staff_id}?fiscal_year_id=${activeFY.id}&month_key=${mk}`);
+  }catch(e){dailyEntries=[];signatureData=null;}
+
+  renderDays();
+  renderSignature();
+}
+
+function renderDays(){
+  const mk=staffMonth;
+  const year=fyYear(mk);
+  const numDays=getDaysInMonth(mk,year);
+  const today=new Date();
+  const todayDay=today.getDate();
+  const todayMonth=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'][today.getMonth()];
+  const isAdmin=currentRole==='admin';
+  const isSigned=signatureData&&signatureData.status==='submitted';
+
+  let totalFS=0;
+  const entryMap={};
+  dailyEntries.forEach(e=>{entryMap[e.day_of_month]=e;totalFS+=parseFloat(e.food_service_hours)||0;});
+  document.getElementById('staffTotalHours').textContent=totalFS.toFixed(1);
+
+  let html='';
+  for(let d=1;d<=numDays;d++){
+    const date=new Date(year,monthNum(mk),d);
+    const dow=date.getDay();
+    const isWeekend=dow===0||dow===6;
+    const isToday=todayMonth===mk&&todayDay===d;
+    const entry=entryMap[d];
+    const fsVal=entry?parseFloat(entry.food_service_hours)||0:0;
+    const hasVal=fsVal>0;
+
+    html+=`<div class="day-row ${hasVal?'has-value':''}">
+      <div class="day-num ${isToday?'today':isWeekend?'weekend':''}">${d}</div>
+      <div class="day-name">${DOW[dow]}</div>
+      <div class="day-input">
+        <input type="number" step="0.25" min="0" max="24" placeholder="${isWeekend?'—':'0'}"
+          value="${fsVal>0?fsVal:''}"
+          onchange="saveDayEntry(${d},this.value,0)"
+          ${isSigned?'disabled':''}
+          style="${isWeekend&&!hasVal?'opacity:.4':''}"
+        >
+      </div>
+      ${isAdmin?`<div style="width:60px"><input type="number" step="0.25" min="0" max="24" placeholder="Adm"
+        value="${entry&&parseFloat(entry.admin_hours)>0?parseFloat(entry.admin_hours):''}"
+        onchange="saveDayEntry(${d},document.querySelector('[data-day-fs=\\'${d}\\']')?.value||0,this.value)"
+        ${isSigned?'disabled':''}
+        style="font-size:14px;padding:8px;color:var(--info)"
+      ></div>`:''}
+    </div>`;
+  }
+  document.getElementById('daysContainer').innerHTML=html;
+}
+
+async function saveDayEntry(day,fsVal,admVal){
+  try{
+    await api('/api/daily-entries',{method:'POST',body:{
+      staff_id:currentUser.staff_id,
+      fiscal_year_id:activeFY.id,
+      month_key:staffMonth,
+      day_of_month:day,
+      food_service_hours:parseFloat(fsVal)||0,
+      admin_hours:parseFloat(admVal)||0
+    }});
+    // Refresh
+    dailyEntries=await api(`/api/daily-entries/${currentUser.staff_id}?fiscal_year_id=${activeFY.id}&month_key=${staffMonth}`);
+    let total=0;dailyEntries.forEach(e=>total+=parseFloat(e.food_service_hours)||0);
+    document.getElementById('staffTotalHours').textContent=total.toFixed(1);
+    // Update the day-row class
+    const rows=document.querySelectorAll('.day-row');
+    if(rows[day-1]){rows[day-1].classList.toggle('has-value',parseFloat(fsVal)>0);}
+    showToast('Saved','ok');
+  }catch(e){showToast('Save failed','err');}
+}
+
+function renderSignature(){
+  const isSigned=signatureData&&signatureData.status==='submitted';
+  let total=0;dailyEntries.forEach(e=>total+=parseFloat(e.food_service_hours)||0);
+
+  if(isSigned){
+    document.getElementById('sigSection').innerHTML=`
+      <div class="sig-box signed">
+        <div style="font-size:13px;color:var(--success);font-weight:600">Signed and submitted</div>
+        <div class="sig-name">${signatureData.employee_signature}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">${new Date(signatureData.employee_signed_at).toLocaleDateString()}</div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);text-align:center">To make changes, contact your director to reopen this month.</p>`;
+  }else if(total>0){
+    document.getElementById('sigSection').innerHTML=`
+      <div class="sig-box">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:8px">When your hours are complete for this month, sign below:</div>
+        <div class="field-group" style="text-align:left;margin:12px 0">
+          <label>Type your full name as digital signature</label>
+          <input type="text" id="sigNameInput" placeholder="${currentUser.name}" style="font-size:16px;font-style:italic">
+        </div>
+        <button class="btn btn-success" onclick="submitSignature()">Sign and Submit ${ML[staffMonth]} Hours</button>
+      </div>`;
+  }else{
+    document.getElementById('sigSection').innerHTML=`
+      <p style="font-size:13px;color:var(--muted);text-align:center;padding:20px 0">Enter your daily CACFP food service hours above. Sign at the end of the month.</p>`;
+  }
+}
+
+async function submitSignature(){
+  const name=document.getElementById('sigNameInput').value.trim();
+  if(!name){showToast('Type your full name to sign','err');return;}
+  if(!confirm(`Sign and submit your ${ML[staffMonth]} CACFP hours as "${name}"? You won't be able to edit after signing.`))return;
+  try{
+    await api('/api/signature',{method:'POST',body:{
+      staff_id:currentUser.staff_id,
+      fiscal_year_id:activeFY.id,
+      month_key:staffMonth,
+      employee_signature:name
+    }});
+    signatureData=await api(`/api/signature/${currentUser.staff_id}?fiscal_year_id=${activeFY.id}&month_key=${staffMonth}`);
+    renderDays();renderSignature();
+    showToast('Signed and submitted!','ok');
+  }catch(e){showToast('Error: '+e.message,'err');}
+}
+
+// ── DIRECTOR DASHBOARD ──
+function initDirMonth(){
+  const now=new Date();
+  const months=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  dirMonth=months[now.getMonth()];
+  dirMonthIdx=MO.indexOf(dirMonth);
+}
+
+function dirChangeMonth(dir){
+  dirMonthIdx=Math.max(0,Math.min(MO.length-1,dirMonthIdx+dir));
+  dirMonth=MO[dirMonthIdx];
+  document.getElementById('dirMonthLabel').textContent=ML[dirMonth]+' '+fyYear(dirMonth);
+  loadMonthlyStatus();
+}
+
+function dirTab(tab){
+  document.querySelectorAll('.pill-tabs .pill-tab').forEach((t,i)=>{
+    if(i<2)t.classList.toggle('active',i===(tab==='status'?0:1));
+  });
+  document.getElementById('dirStatusTab').style.display=tab==='status'?'block':'none';
+  document.getElementById('dirRosterTab').style.display=tab==='roster'?'block':'none';
+}
+
+function dirCenterFilter(c){
+  dirCenter=c;
+  document.querySelectorAll('#dirStatusTab .pill-tabs .pill-tab').forEach(t=>{
+    t.classList.toggle('active',t.textContent.toLowerCase()===c||
+      (c==='all'&&t.textContent==='All')||(c==='niles'&&t.textContent==='Niles')||(c==='peace'&&t.textContent==='Peace'));
+  });
+  loadMonthlyStatus();
+}
+
+async function loadMonthlyStatus(){
+  try{
+    const data=await api(`/api/manage/monthly-status?month_key=${dirMonth}`);
+    const yr=fyYear(dirMonth);
+    document.getElementById('dirMonthLabel').textContent=ML[dirMonth]+' '+yr;
+    let staff=data.staff||[];
+    if(dirCenter!=='all')staff=staff.filter(s=>s.center===dirCenter);
+
+    const submitted=staff.filter(s=>s.status==='submitted').length;
+    const total=staff.length;
+
+    let html=`<div style="display:flex;gap:8px;margin-bottom:12px">
+      <div style="flex:1;text-align:center;padding:10px;background:var(--bg);border-radius:8px">
+        <div style="font-size:20px;font-weight:700;color:var(--success)">${submitted}</div>
+        <div style="font-size:11px;color:var(--muted)">Submitted</div>
+      </div>
+      <div style="flex:1;text-align:center;padding:10px;background:var(--bg);border-radius:8px">
+        <div style="font-size:20px;font-weight:700;color:var(--error)">${total-submitted}</div>
+        <div style="font-size:11px;color:var(--muted)">Pending</div>
+      </div>
+      <div style="flex:1;text-align:center;padding:10px;background:var(--bg);border-radius:8px">
+        <div style="font-size:20px;font-weight:700">${total}</div>
+        <div style="font-size:11px;color:var(--muted)">Total</div>
+      </div>
+    </div>`;
+
+    if(!staff.length){html+='<p style="color:var(--muted);text-align:center;padding:20px">No staff found</p>';}
+    else{
+      for(const s of staff){
+        const status=s.status||'none';
+        const statusLabel=status==='submitted'?'Submitted':s.days_entered>0?'In progress':'Not started';
+        const statusClass=status==='submitted'?'submitted':s.days_entered>0?'in_progress':'none';
+        const centerLabel=s.center==='niles'?'Niles':'Peace';
+        html+=`<div class="staff-status-row">
+          <div class="info">
+            <div class="name">${s.name}</div>
+            <div class="meta"><span class="center-badge">${centerLabel}</span> ${s.days_entered} days entered, ${parseFloat(s.total_fs).toFixed(1)} FS hrs</div>
+          </div>
+          <span class="status-badge ${statusClass}">${statusLabel}</span>
+        </div>`;
+      }
+    }
+    document.getElementById('dirStatusList').innerHTML=html;
+  }catch(e){document.getElementById('dirStatusList').innerHTML='<p style="color:var(--error)">Error loading data</p>';}
+}
+
+// ── ROSTER MANAGEMENT ──
+async function loadRoster(){
+  try{
+    const staff=await api('/api/manage/staff');
+    let html='';
+    for(const s of staff){
+      const centerLabel=s.center==='niles'?'Niles':'Peace';
+      const hasPin=!!s.pin;
+      html+=`<div class="roster-row">
+        <div>
+          <div class="name">${s.name}</div>
+          <div class="detail"><span class="center-badge">${centerLabel}</span> $${parseFloat(s.hourly_rate||0).toFixed(2)}/hr ${hasPin?'<span style="color:var(--success)">PIN set</span>':'<span style="color:var(--error)">No PIN</span>'} ${s.role==='admin'?'<span style="color:var(--info)">(Admin)</span>':''}</div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-sm btn-outline" onclick="editStaff(${s.id},'${s.name.replace("'","\\'")}','${s.center}',${s.hourly_rate||0},'${s.pin||''}','${s.role||'staff'}')">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="removeStaff(${s.id},'${s.name.replace("'","\\'")}')">Remove</button>
+        </div>
+      </div>`;
+    }
+    document.getElementById('rosterList').innerHTML=html||'<p style="color:var(--muted);text-align:center">No staff yet</p>';
+  }catch(e){}
+}
+
+function showAddStaff(){
+  document.getElementById('addStaffTitle').textContent='Add new staff';
+  document.getElementById('editStaffId').value='';
+  document.getElementById('newStaffName').value='';
+  document.getElementById('newStaffRate').value='';
+  document.getElementById('newStaffPin').value='';
+  document.getElementById('newStaffRole').value='staff';
+  document.getElementById('addStaffForm').style.display='block';
+}
+
+function editStaff(id,name,center,rate,pin,role){
+  document.getElementById('addStaffTitle').textContent='Edit '+name;
+  document.getElementById('editStaffId').value=id;
+  document.getElementById('newStaffName').value=name;
+  document.getElementById('newStaffCenter').value=center;
+  document.getElementById('newStaffRate').value=rate;
+  document.getElementById('newStaffPin').value=pin;
+  document.getElementById('newStaffRole').value=role;
+  document.getElementById('addStaffForm').style.display='block';
+}
+
+function hideAddStaff(){document.getElementById('addStaffForm').style.display='none';}
+
+async function saveStaff(){
+  const id=document.getElementById('editStaffId').value;
+  const name=document.getElementById('newStaffName').value.trim();
+  const center=document.getElementById('newStaffCenter').value;
+  const rate=parseFloat(document.getElementById('newStaffRate').value)||0;
+  const pin=document.getElementById('newStaffPin').value.trim();
+  const role=document.getElementById('newStaffRole').value;
+  if(!name){showToast('Enter a name','err');return;}
+  if(!pin||pin.length<4){showToast('PIN must be at least 4 digits','err');return;}
+
+  try{
+    if(id){
+      // Update existing
+      await api(`/api/manage/staff/${id}/pin`,{method:'PUT',body:{pin,role}});
+      await api(`/api/manage/staff/${id}/rate`,{method:'PUT',body:{hourly_rate:rate}});
+    }else{
+      await api('/api/manage/staff',{method:'POST',body:{name,center,hourly_rate:rate,pin,role}});
+    }
+    hideAddStaff();loadRoster();loadStaffList();
+    showToast(id?'Updated!':'Added!','ok');
+  }catch(e){showToast('Error: '+e.message,'err');}
+}
+
+async function removeStaff(id,name){
+  if(!confirm(`Remove ${name}? They will no longer be able to log in.`))return;
+  try{
+    await api(`/api/manage/staff/${id}/deactivate`,{method:'PUT'});
+    loadRoster();loadStaffList();showToast(name+' removed','ok');
+  }catch(e){showToast('Error','err');}
+}
+
+// ── HELPERS ──
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function fyYear(mk){
+  return ['oct','nov','dec'].includes(mk)?activeFY.start_year:activeFY.end_year;
+}
+
+function monthNum(mk){
+  const map={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+  return map[mk];
+}
+
+function getDaysInMonth(mk,year){
+  return new Date(year,monthNum(mk)+1,0).getDate();
+}
+
+async function api(url,opts={}){
+  const o={headers:{'Content-Type':'application/json'},...opts};
+  if(o.body&&typeof o.body==='object'&&!(o.body instanceof FormData))o.body=JSON.stringify(o.body);
+  const res=await fetch(url,o);
+  if(!res.ok){const e=await res.json().catch(()=>({error:'Request failed'}));throw new Error(e.error||'Error');}
+  return res.json();
+}
+
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast show '+(type||'');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+init();
+</script>
+</body>
+</html>
