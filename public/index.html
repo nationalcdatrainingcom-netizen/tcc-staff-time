@@ -524,13 +524,21 @@ function renderSignature(){
   let total=0;dailyEntries.forEach(e=>total+=parseFloat(e.food_service_hours)||0);
 
   if(isSigned){
+    const isApproved=signatureData.status==='approved';
     document.getElementById('sigSection').innerHTML=`
       <div class="sig-box signed">
         <div style="font-size:13px;color:var(--success);font-weight:600">Signed and submitted</div>
         <div class="sig-name">${signatureData.employee_signature}</div>
         <div style="font-size:12px;color:var(--muted);margin-top:4px">${new Date(signatureData.employee_signed_at).toLocaleDateString()}</div>
       </div>
-      <p style="font-size:12px;color:var(--muted);text-align:center">To make changes, contact your director to reopen this month.</p>`;
+      ${isApproved?
+        `<p style="font-size:12px;color:var(--muted);text-align:center">This month has been approved by your supervisor. Contact them to make changes.</p>`
+        :`<div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+          <button class="btn btn-sm btn-outline" onclick="unsignMonth()">✏️ Unsign & Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="clearMonth()">🗑️ Clear All ${ML[staffMonth]} Entries</button>
+        </div>
+        <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:6px">Unsign to edit hours. Clear to delete all entries and start over.</p>`
+      }`;
   }else if(total>0){
     document.getElementById('sigSection').innerHTML=`
       <div class="sig-box">
@@ -562,6 +570,35 @@ async function submitSignature(){
     renderDays();renderSignature();
     showToast('Signed and submitted!','ok');
   }catch(e){showToast('Error: '+e.message,'err');}
+}
+
+async function unsignMonth(){
+  if(!confirm(`Remove your signature for ${ML[staffMonth]}? Your hours will still be saved but you can edit them.`))return;
+  try{
+    await api('/api/unsign',{method:'POST',body:{
+      staff_id:currentUser.staff_id,
+      fiscal_year_id:activeFY.id,
+      month_key:staffMonth
+    }});
+    signatureData=null;
+    renderDays();renderSignature();
+    showToast('Signature removed — you can now edit your hours','ok');
+  }catch(e){showToast(e.message,'err');}
+}
+
+async function clearMonth(){
+  if(!confirm(`DELETE all your ${ML[staffMonth]} entries? This cannot be undone. All daily hours and your signature will be removed.`))return;
+  if(!confirm(`Are you sure? This will permanently delete all ${ML[staffMonth]} data.`))return;
+  try{
+    await api('/api/clear-month',{method:'POST',body:{
+      staff_id:currentUser.staff_id,
+      fiscal_year_id:activeFY.id,
+      month_key:staffMonth
+    }});
+    dailyEntries=[];signatureData=null;
+    renderDays();renderSignature();
+    showToast(`${ML[staffMonth]} entries cleared`,'ok');
+  }catch(e){showToast(e.message,'err');}
 }
 
 // ── DIRECTOR DASHBOARD ──
@@ -636,7 +673,10 @@ async function loadMonthlyStatus(){
             <div class="name">${s.name}</div>
             <div class="meta"><span class="center-badge">${centerLabel}</span> ${s.days_entered} days entered, ${parseFloat(s.total_fs).toFixed(1)} FS hrs</div>
           </div>
-          <span class="status-badge ${statusClass}">${statusLabel}</span>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="status-badge ${statusClass}">${statusLabel}</span>
+            ${status==='submitted'||s.days_entered>0?`<button class="btn btn-sm btn-outline" style="font-size:.7rem;padding:4px 8px" onclick="dirReopenMonth(${s.id},'${s.name.replace(/'/g,"\\'")}')">Reopen</button>`:''}
+          </div>
         </div>`;
       }
     }
@@ -645,6 +685,16 @@ async function loadMonthlyStatus(){
 }
 
 // ── ROSTER MANAGEMENT ──
+
+async function dirReopenMonth(staffId,name){
+  if(!confirm(`Reopen ${name}'s ${ML[dirMonth]} time entry? Their signature will be removed and they can edit their hours.`))return;
+  try{
+    const fyRes=await api('/api/fiscal-year');
+    await api('/api/reopen-month',{method:'POST',body:{staff_id:staffId,fiscal_year_id:fyRes.id,month_key:dirMonth}});
+    showToast(`${name}'s ${ML[dirMonth]} reopened`,'ok');
+    loadMonthlyStatus();
+  }catch(e){showToast('Error: '+e.message,'err');}
+}
 function canSeeWages(){return currentDirector&&(currentDirector.role==='owner'||currentDirector.role==='admin');}
 function canEnterWages(){return currentDirector&&(currentDirector.role==='owner'||currentDirector.role==='admin'||currentDirector.role==='hr');}
 
