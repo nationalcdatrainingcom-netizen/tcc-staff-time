@@ -95,7 +95,7 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bot
     </div>
     <div class="field-group">
       <label>Enter your PIN</label>
-      <input type="password" id="loginPin" inputmode="numeric" maxlength="6" placeholder="****">
+      <input type="password" id="loginPin" maxlength="10" placeholder="****">
     </div>
     <button class="btn btn-navy" onclick="staffLogin()">Sign In</button>
   </div>
@@ -103,7 +103,7 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bot
     <h3>Director / Admin</h3>
     <div class="field-group">
       <label>Director or Admin PIN</label>
-      <input type="password" id="dirPin" inputmode="numeric" maxlength="10" placeholder="****">
+      <input type="password" id="dirPin" maxlength="20" placeholder="****">
     </div>
     <button class="btn btn-outline" onclick="directorLogin()">Director Sign In</button>
   </div>
@@ -202,7 +202,7 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bot
       </div>
       <div class="field-group">
         <label>PIN (4-6 digits)</label>
-        <input type="text" id="newStaffPin" inputmode="numeric" maxlength="6" placeholder="1234">
+        <input type="text" id="newStaffPin" maxlength="10" placeholder="1234">
       </div>
       <div class="field-group">
         <label>Role</label>
