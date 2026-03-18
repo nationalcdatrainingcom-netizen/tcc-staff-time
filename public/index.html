@@ -438,12 +438,19 @@ function renderDays(){
   const isAdmin=currentRole==='admin';
   const isSigned=signatureData&&signatureData.status==='submitted';
 
-  let totalFS=0;
+  let totalFS=0,totalAdm=0;
   const entryMap={};
-  dailyEntries.forEach(e=>{entryMap[e.day_of_month]=e;totalFS+=parseFloat(e.food_service_hours)||0;});
+  dailyEntries.forEach(e=>{entryMap[e.day_of_month]=e;totalFS+=parseFloat(e.food_service_hours)||0;totalAdm+=parseFloat(e.admin_hours)||0;});
   document.getElementById('staffTotalHours').textContent=totalFS.toFixed(1);
 
   let html='';
+  if(isAdmin){
+    html+=`<div style="display:flex;gap:8px;margin-bottom:12px;font-size:12px;color:var(--muted)">
+      <div style="width:32px"></div><div style="width:36px"></div>
+      <div style="flex:1;text-align:center;font-weight:600;color:var(--navy)">Food Service</div>
+      <div style="flex:1;text-align:center;font-weight:600;color:var(--info)">Admin</div>
+    </div>`;
+  }
   for(let d=1;d<=numDays;d++){
     const date=new Date(year,monthNum(mk),d);
     const dow=date.getDay();
@@ -451,25 +458,40 @@ function renderDays(){
     const isToday=todayMonth===mk&&todayDay===d;
     const entry=entryMap[d];
     const fsVal=entry?parseFloat(entry.food_service_hours)||0:0;
-    const hasVal=fsVal>0;
+    const admVal=entry?parseFloat(entry.admin_hours)||0:0;
+    const hasVal=fsVal>0||admVal>0;
 
     html+=`<div class="day-row ${hasVal?'has-value':''}">
       <div class="day-num ${isToday?'today':isWeekend?'weekend':''}">${d}</div>
       <div class="day-name">${DOW[dow]}</div>
-      <div class="day-input">
+      <div class="day-input" style="${isAdmin?'display:flex;gap:8px':''}">
         <input type="number" step="0.25" min="0" max="24" placeholder="${isWeekend?'—':'0'}"
           value="${fsVal>0?fsVal:''}"
-          onchange="saveDayEntry(${d},this.value,0)"
+          data-day="${d}" data-type="fs"
+          onchange="saveDayEntry(${d},this.value,${isAdmin}?document.querySelector('[data-day=\\'${d}\\'][data-type=\\'adm\\']')?.value||0:0)"
           ${isSigned?'disabled':''}
-          style="${isWeekend&&!hasVal?'opacity:.4':''}"
+          style="${isWeekend&&!hasVal?'opacity:.4':''}${isAdmin?';flex:1':''}"
         >
+        ${isAdmin?`<input type="number" step="0.25" min="0" max="24" placeholder="${isWeekend?'—':'0'}"
+          value="${admVal>0?admVal:''}"
+          data-day="${d}" data-type="adm"
+          onchange="saveDayEntry(${d},document.querySelector('[data-day=\\'${d}\\'][data-type=\\'fs\\']')?.value||0,this.value)"
+          ${isSigned?'disabled':''}
+          style="flex:1;border-color:var(--info);${isWeekend&&!hasVal?'opacity:.4':''}"
+        >`:''}
       </div>
-      ${isAdmin?`<div style="width:60px"><input type="number" step="0.25" min="0" max="24" placeholder="Adm"
-        value="${entry&&parseFloat(entry.admin_hours)>0?parseFloat(entry.admin_hours):''}"
-        onchange="saveDayEntry(${d},document.querySelector('[data-day-fs=\\'${d}\\']')?.value||0,this.value)"
-        ${isSigned?'disabled':''}
-        style="font-size:14px;padding:8px;color:var(--info)"
-      ></div>`:''}
+    </div>`;
+  }
+  if(isAdmin){
+    html+=`<div style="display:flex;gap:12px;margin-top:12px;font-size:13px">
+      <div style="flex:1;text-align:center;padding:8px;background:#f0f4ff;border-radius:8px">
+        <div style="font-weight:600;color:var(--navy)">${totalFS.toFixed(1)}</div>
+        <div style="font-size:11px;color:var(--muted)">Food service hrs</div>
+      </div>
+      <div style="flex:1;text-align:center;padding:8px;background:#e3f2fd;border-radius:8px">
+        <div style="font-weight:600;color:var(--info)">${totalAdm.toFixed(1)}</div>
+        <div style="font-size:11px;color:var(--muted)">Admin hrs</div>
+      </div>
     </div>`;
   }
   document.getElementById('daysContainer').innerHTML=html;
