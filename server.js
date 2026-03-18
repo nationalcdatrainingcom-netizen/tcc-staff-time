@@ -251,6 +251,59 @@ app.post('/api/signature', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Unsign — reopen a month for editing (only if not yet approved by supervisor)
+app.post('/api/unsign', async (req, res) => {
+  try {
+    const { staff_id, fiscal_year_id, month_key } = req.body;
+    const sigRes = await pool.query(
+      'SELECT * FROM monthly_signatures WHERE staff_id=$1 AND fiscal_year_id=$2 AND month_key=$3',
+      [staff_id, fiscal_year_id, month_key]
+    );
+    const sig = sigRes.rows[0];
+    if (sig && sig.status === 'approved') return res.status(403).json({ error: 'This month has been approved by your supervisor. Contact them to reopen it.' });
+    await pool.query(
+      'DELETE FROM monthly_signatures WHERE staff_id=$1 AND fiscal_year_id=$2 AND month_key=$3',
+      [staff_id, fiscal_year_id, month_key]
+    );
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Director reopen — can reopen even approved months
+app.post('/api/reopen-month', async (req, res) => {
+  try {
+    const { staff_id, fiscal_year_id, month_key } = req.body;
+    await pool.query(
+      'DELETE FROM monthly_signatures WHERE staff_id=$1 AND fiscal_year_id=$2 AND month_key=$3',
+      [staff_id, fiscal_year_id, month_key]
+    );
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Clear all daily entries for a staff member for a month
+app.post('/api/clear-month', async (req, res) => {
+  try {
+    const { staff_id, fiscal_year_id, month_key } = req.body;
+    // Delete signature first
+    await pool.query(
+      'DELETE FROM monthly_signatures WHERE staff_id=$1 AND fiscal_year_id=$2 AND month_key=$3',
+      [staff_id, fiscal_year_id, month_key]
+    );
+    // Delete daily entries
+    await pool.query(
+      'DELETE FROM daily_cacfp_entries WHERE staff_id=$1 AND fiscal_year_id=$2 AND month_key=$3',
+      [staff_id, fiscal_year_id, month_key]
+    );
+    // Clear the rolled-up totals
+    await pool.query(
+      'DELETE FROM staff_time_entries WHERE staff_id=$1 AND fiscal_year_id=$2 AND month_key=$3',
+      [staff_id, fiscal_year_id, month_key]
+    );
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ── MANAGEMENT ──
 app.get('/api/manage/staff', async (req, res) => {
   try {
