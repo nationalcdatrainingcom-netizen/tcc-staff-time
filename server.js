@@ -74,6 +74,8 @@ async function initDB() {
       created_at TIMESTAMP DEFAULT NOW()
     );
   `);
+  // Add adult_meal column if it doesn't exist
+  await pool.query(`ALTER TABLE daily_cacfp_entries ADD COLUMN IF NOT EXISTS adult_meal BOOLEAN DEFAULT false`);
   console.log('✅ Staff Time tables ready');
 }
 
@@ -195,14 +197,14 @@ app.get('/api/daily-entries/:staffId', async (req, res) => {
 
 app.post('/api/daily-entries', async (req, res) => {
   try {
-    const { staff_id, fiscal_year_id, month_key, day_of_month, food_service_hours, admin_hours } = req.body;
+    const { staff_id, fiscal_year_id, month_key, day_of_month, food_service_hours, admin_hours, adult_meal } = req.body;
     const { rows } = await pool.query(
-      `INSERT INTO daily_cacfp_entries (staff_id, fiscal_year_id, month_key, day_of_month, food_service_hours, admin_hours)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO daily_cacfp_entries (staff_id, fiscal_year_id, month_key, day_of_month, food_service_hours, admin_hours, adult_meal)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        ON CONFLICT (staff_id, fiscal_year_id, month_key, day_of_month)
-       DO UPDATE SET food_service_hours = $5, admin_hours = $6, updated_at = NOW()
+       DO UPDATE SET food_service_hours = $5, admin_hours = $6, adult_meal = $7, updated_at = NOW()
        RETURNING *`,
-      [staff_id, fiscal_year_id, month_key, day_of_month, food_service_hours || 0, admin_hours || 0]
+      [staff_id, fiscal_year_id, month_key, day_of_month, food_service_hours || 0, admin_hours || 0, adult_meal || false]
     );
     res.json(rows[0]);
   } catch (e) { res.status(500).json({ error: e.message }); }
