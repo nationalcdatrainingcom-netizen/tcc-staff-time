@@ -438,9 +438,9 @@ function renderDays(){
   const isAdmin=currentRole==='admin';
   const isSigned=signatureData&&signatureData.status==='submitted';
 
-  let totalFS=0,totalAdm=0;
+  let totalFS=0,totalAdm=0,totalAdultMeals=0;
   const entryMap={};
-  dailyEntries.forEach(e=>{entryMap[e.day_of_month]=e;totalFS+=parseFloat(e.food_service_hours)||0;totalAdm+=parseFloat(e.admin_hours)||0;});
+  dailyEntries.forEach(e=>{entryMap[e.day_of_month]=e;totalFS+=parseFloat(e.food_service_hours)||0;totalAdm+=parseFloat(e.admin_hours)||0;if(e.adult_meal)totalAdultMeals++;});
   document.getElementById('staffTotalHours').textContent=totalFS.toFixed(1);
 
   let html='';
@@ -449,6 +449,13 @@ function renderDays(){
       <div style="width:32px"></div><div style="width:36px"></div>
       <div style="flex:1;text-align:center;font-weight:600;color:var(--navy)">Food Service</div>
       <div style="flex:1;text-align:center;font-weight:600;color:var(--info)">Admin</div>
+      <div style="width:44px;text-align:center;font-weight:600;color:#8D6E00;font-size:10px">Meal</div>
+    </div>`;
+  }else{
+    html+=`<div style="display:flex;gap:8px;margin-bottom:8px;font-size:11px;color:var(--muted)">
+      <div style="width:32px"></div><div style="width:36px"></div>
+      <div style="flex:1;text-align:center">CACFP Hours</div>
+      <div style="width:44px;text-align:center;font-size:10px">Meal?</div>
     </div>`;
   }
   for(let d=1;d<=numDays;d++){
@@ -460,6 +467,7 @@ function renderDays(){
     const fsVal=entry?parseFloat(entry.food_service_hours)||0:0;
     const admVal=entry?parseFloat(entry.admin_hours)||0:0;
     const hasVal=fsVal>0||admVal>0;
+    const hasMeal=entry?.adult_meal||false;
 
     html+=`<div class="day-row ${hasVal?'has-value':''}">
       <div class="day-num ${isToday?'today':isWeekend?'weekend':''}">${d}</div>
@@ -480,42 +488,72 @@ function renderDays(){
           style="flex:1;border-color:var(--info);${isWeekend&&!hasVal?'opacity:.4':''}"
         >`:''}
       </div>
+      <div style="width:44px;text-align:center">
+        <button onclick="toggleAdultMeal(${d},${!hasMeal})" ${isSigned?'disabled':''}
+          style="width:36px;height:36px;border-radius:8px;border:1.5px solid ${hasMeal?'var(--success)':'#ddd'};background:${hasMeal?'#e8f5e9':'#fff'};font-size:16px;cursor:pointer;padding:0"
+          title="Adult meal served?">${hasMeal?'✓':''}</button>
+      </div>
     </div>`;
   }
+  // Totals
+  html+=`<div style="display:flex;gap:8px;margin-top:12px;font-size:13px">`;
   if(isAdmin){
-    html+=`<div style="display:flex;gap:12px;margin-top:12px;font-size:13px">
-      <div style="flex:1;text-align:center;padding:8px;background:#f0f4ff;border-radius:8px">
+    html+=`<div style="flex:1;text-align:center;padding:8px;background:#f0f4ff;border-radius:8px">
         <div style="font-weight:600;color:var(--navy)">${totalFS.toFixed(1)}</div>
         <div style="font-size:11px;color:var(--muted)">Food service hrs</div>
       </div>
       <div style="flex:1;text-align:center;padding:8px;background:#e3f2fd;border-radius:8px">
         <div style="font-weight:600;color:var(--info)">${totalAdm.toFixed(1)}</div>
         <div style="font-size:11px;color:var(--muted)">Admin hrs</div>
-      </div>
-    </div>`;
+      </div>`;
   }
+  html+=`<div style="${isAdmin?'':'flex:1;'}text-align:center;padding:8px;background:#fff8e1;border-radius:8px;${isAdmin?'width:80px':''}">
+      <div style="font-weight:600;color:#8D6E00">${totalAdultMeals}</div>
+      <div style="font-size:11px;color:var(--muted)">Adult meals</div>
+    </div>
+  </div>`;
   document.getElementById('daysContainer').innerHTML=html;
 }
 
 async function saveDayEntry(day,fsVal,admVal){
   try{
+    // Preserve existing adult_meal value
+    const existing=dailyEntries.find(e=>e.day_of_month===day);
     await api('/api/daily-entries',{method:'POST',body:{
       staff_id:currentUser.staff_id,
       fiscal_year_id:activeFY.id,
       month_key:staffMonth,
       day_of_month:day,
       food_service_hours:parseFloat(fsVal)||0,
-      admin_hours:parseFloat(admVal)||0
+      admin_hours:parseFloat(admVal)||0,
+      adult_meal:existing?.adult_meal||false
     }});
     // Refresh
     dailyEntries=await api(`/api/daily-entries/${currentUser.staff_id}?fiscal_year_id=${activeFY.id}&month_key=${staffMonth}`);
     let total=0;dailyEntries.forEach(e=>total+=parseFloat(e.food_service_hours)||0);
     document.getElementById('staffTotalHours').textContent=total.toFixed(1);
-    // Update the day-row class
     const rows=document.querySelectorAll('.day-row');
     if(rows[day-1]){rows[day-1].classList.toggle('has-value',parseFloat(fsVal)>0);}
     renderSignature();
     showToast('Saved','ok');
+  }catch(e){showToast('Save failed','err');}
+}
+
+async function toggleAdultMeal(day,val){
+  try{
+    const existing=dailyEntries.find(e=>e.day_of_month===day);
+    await api('/api/daily-entries',{method:'POST',body:{
+      staff_id:currentUser.staff_id,
+      fiscal_year_id:activeFY.id,
+      month_key:staffMonth,
+      day_of_month:day,
+      food_service_hours:parseFloat(existing?.food_service_hours)||0,
+      admin_hours:parseFloat(existing?.admin_hours)||0,
+      adult_meal:val
+    }});
+    dailyEntries=await api(`/api/daily-entries/${currentUser.staff_id}?fiscal_year_id=${activeFY.id}&month_key=${staffMonth}`);
+    renderDays();renderSignature();
+    showToast(val?'Adult meal ✓':'Adult meal cleared','ok');
   }catch(e){showToast('Save failed','err');}
 }
 
