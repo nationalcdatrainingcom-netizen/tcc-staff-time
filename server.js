@@ -75,7 +75,8 @@ async function initDB() {
     );
   `);
   // Add adult_meal column if it doesn't exist
-  await pool.query(`ALTER TABLE daily_cacfp_entries ADD COLUMN IF NOT EXISTS adult_meal BOOLEAN DEFAULT false`);
+  await pool.query('ALTER TABLE daily_cacfp_entries ADD COLUMN IF NOT EXISTS adult_meal BOOLEAN DEFAULT false');
+  await pool.query('ALTER TABLE monthly_signatures ADD COLUMN IF NOT EXISTS admin_note TEXT');
   console.log('✅ Staff Time tables ready');
 }
 
@@ -237,14 +238,20 @@ app.get('/api/signature/:staffId', async (req, res) => {
 
 app.post('/api/signature', async (req, res) => {
   try {
-    const { staff_id, fiscal_year_id, month_key, employee_signature } = req.body;
+    const { staff_id, fiscal_year_id, month_key, employee_signature, admin_override, admin_note } = req.body;
+    const sigText = admin_override
+      ? `[ADMIN] ${employee_signature}`
+      : employee_signature;
+    const note = admin_override
+      ? (admin_note || 'Hours transferred from physical Time & Attendance form by administrator')
+      : null;
     const { rows } = await pool.query(
-      `INSERT INTO monthly_signatures (staff_id, fiscal_year_id, month_key, employee_signature, employee_signed_at, status)
-       VALUES ($1, $2, $3, $4, NOW(), 'submitted')
+      `INSERT INTO monthly_signatures (staff_id, fiscal_year_id, month_key, employee_signature, employee_signed_at, status, admin_note)
+       VALUES ($1, $2, $3, $4, NOW(), 'submitted', $5)
        ON CONFLICT (staff_id, fiscal_year_id, month_key)
-       DO UPDATE SET employee_signature = $4, employee_signed_at = NOW(), status = 'submitted'
+       DO UPDATE SET employee_signature = $4, employee_signed_at = NOW(), status = 'submitted', admin_note = $5
        RETURNING *`,
-      [staff_id, fiscal_year_id, month_key, employee_signature]
+      [staff_id, fiscal_year_id, month_key, sigText, note]
     );
     // Roll up totals to staff_time_entries for the CACFP Suite
     const totRes = await pool.query(
