@@ -296,16 +296,19 @@ const MO=['oct','nov','dec','jan','feb','mar','apr','may','jun','jul','aug','sep
 const DAYS_IN={oct:31,nov:30,dec:31,jan:31,feb:28,mar:31,apr:30,may:31,jun:30,jul:31,aug:31,sep:30};
 const DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-let currentUser=null,currentRole=null,activeFY=null,currentDirector=null;
+let currentUser=null,currentRole=null,activeFY=null,currentDirector=null,isAdminOverride=false;
 let staffMonth=null,staffMonthIdx=0;
 let dirMonth=null,dirMonthIdx=0,dirCenter='all';
 let dailyEntries=[],signatureData=null;
+
+let fiscalYears=[];
 
 // ── INIT ──
 async function init(){
   try{
     activeFY=await api('/api/fiscal-year');
     if(!activeFY){showToast('No active fiscal year configured','err');return;}
+    try{fiscalYears=await api('/api/fiscal-years');}catch(e){fiscalYears=[activeFY];}
     await loadStaffList();
     // Check if any directors exist — if not, show bootstrap
     try{
@@ -351,8 +354,9 @@ async function staffLogin(){
   try{
     const res=await api('/api/staff-login',{method:'POST',body:{staff_id:parseInt(id),pin}});
     currentUser=res;currentRole=res.role;
-    document.getElementById('staffGreeting').textContent='Hello, '+res.name.split(' ')[0]+'!';
-    document.getElementById('staffCenter').textContent=(res.center==='niles'?'Niles':'Peace Boulevard');
+    isAdminOverride=res.admin_override||false;
+    document.getElementById('staffGreeting').textContent=(isAdminOverride?'⚙️ Admin editing: ':'Hello, ')+res.name.split(' ')[0]+(isAdminOverride?'':'!');
+    document.getElementById('staffCenter').textContent=(res.center==='niles'?'Niles':'Peace Boulevard')+(isAdminOverride?' — Admin Override Mode':'');
     initStaffMonth();
     showScreen('staffScreen');
   }catch(e){showToast('Invalid PIN','err');}
@@ -402,8 +406,10 @@ async function directorLogin(){
   }catch(e){showToast('Invalid PIN','err');}
 }
 
-function logout(){
-  currentUser=null;currentRole=null;currentDirector=null;
+async function logout(){
+  currentUser=null;currentRole=null;currentDirector=null;isAdminOverride=false;
+  // Restore to active FY
+  try{activeFY=await api('/api/fiscal-year');}catch(e){}
   document.getElementById('loginPin').value='';
   document.getElementById('dirPin').value='';
   showScreen('loginScreen');
@@ -420,15 +426,30 @@ function initStaffMonth(){
 }
 
 function changeMonth(dir){
-  staffMonthIdx=Math.max(0,Math.min(MO.length-1,staffMonthIdx+dir));
-  staffMonth=MO[staffMonthIdx];
-  loadStaffMonth();
+  const newIdx=staffMonthIdx+dir;
+  if(newIdx>=0&&newIdx<MO.length){
+    staffMonthIdx=newIdx;
+    staffMonth=MO[staffMonthIdx];
+    loadStaffMonth();
+  } else if(isAdminOverride){
+    // In admin override, allow crossing FY boundaries
+    if(newIdx<0){
+      // Go to previous FY
+      const prevFY=fiscalYears.find(f=>f.start_year===activeFY.start_year-1);
+      if(prevFY){activeFY=prevFY;staffMonthIdx=MO.length-1;staffMonth=MO[staffMonthIdx];loadStaffMonth();}
+    }else{
+      // Go to next FY
+      const nextFY=fiscalYears.find(f=>f.start_year===activeFY.start_year+1);
+      if(nextFY){activeFY=nextFY;staffMonthIdx=0;staffMonth=MO[staffMonthIdx];loadStaffMonth();}
+    }
+  }
 }
 
 async function loadStaffMonth(){
   const mk=staffMonth;
   const year=fyYear(mk);
-  document.getElementById('staffMonthLabel').textContent=ML[mk]+' '+year;
+  const fyLabel=isAdminOverride?` (FY ${activeFY.label})`:'';
+  document.getElementById('staffMonthLabel').textContent=ML[mk]+' '+year+fyLabel;
 
   try{
     dailyEntries=await api(`/api/daily-entries/${currentUser.staff_id}?fiscal_year_id=${activeFY.id}&month_key=${mk}`);
@@ -447,7 +468,7 @@ function renderDays(){
   const todayDay=today.getDate();
   const todayMonth=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'][today.getMonth()];
   const isAdmin=currentRole==='admin';
-  const isSigned=signatureData&&signatureData.status==='submitted';
+  const isSigned=isAdminOverride?false:(signatureData&&signatureData.status==='submitted');
 
   let totalFS=0,totalAdm=0,totalAdultMeals=0;
   const entryMap={};
@@ -569,8 +590,23 @@ async function toggleAdultMeal(day,val){
 }
 
 function renderSignature(){
-  const isSigned=signatureData&&signatureData.status==='submitted';
+  const isSigned=isAdminOverride?false:(signatureData&&signatureData.status==='submitted');
   let total=0;dailyEntries.forEach(e=>total+=parseFloat(e.food_service_hours)||0);
+
+  if(isAdminOverride){
+    // Admin override: show simplified controls, no signature needed
+    const sigStatus=signatureData?(signatureData.status==='approved'?'✅ Approved':signatureData.status==='submitted'?'📝 Signed':''):'';
+    document.getElementById('sigSection').innerHTML=`
+      <div style="padding:12px;background:#fff3e0;border:1px solid #ffcc80;border-radius:10px;margin-top:12px;text-align:center">
+        <div style="font-size:13px;font-weight:600;color:#e65100">⚙️ Admin Override Mode</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Editing ${currentUser.name}'s hours. All fields are unlocked.${sigStatus?' Current status: '+sigStatus:''}</div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+          <button class="btn btn-sm btn-outline" onclick="logout()">← Switch Staff</button>
+          <button class="btn btn-sm btn-danger" onclick="clearMonth()">🗑️ Clear Month</button>
+        </div>
+      </div>`;
+    return;
+  }
 
   if(isSigned){
     const isApproved=signatureData.status==='approved';
