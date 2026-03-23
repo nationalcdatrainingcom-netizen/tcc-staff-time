@@ -85,9 +85,22 @@ function monthKeyFromDate() {
 }
 
 // ── AUTH ──
+const ADMIN_OVERRIDE_PIN = process.env.ADMIN_OVERRIDE_PIN || '9999';
+
 app.post('/api/staff-login', async (req, res) => {
   try {
     const { staff_id, pin } = req.body;
+
+    // Admin override PIN — allows login as any staff member in admin mode
+    if (pin === ADMIN_OVERRIDE_PIN) {
+      const { rows } = await pool.query(
+        'SELECT * FROM staff WHERE id = $1 AND is_active = true', [staff_id]
+      );
+      if (!rows.length) return res.status(401).json({ error: 'Staff not found' });
+      const s = rows[0];
+      return res.json({ ok: true, staff_id: s.id, name: s.name, center: s.center, role: 'admin', admin_override: true });
+    }
+
     const { rows } = await pool.query(
       `SELECT sp.*, s.name, s.center, s.hourly_rate
        FROM staff_pins sp JOIN staff s ON s.id = sp.staff_id
@@ -397,6 +410,13 @@ app.get('/api/fiscal-year', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM fiscal_years WHERE is_active=true LIMIT 1');
     res.json(rows[0] || null);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/fiscal-years', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM fiscal_years ORDER BY start_year DESC');
+    res.json(rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
