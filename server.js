@@ -180,6 +180,26 @@ app.delete('/api/directors/:id', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── DEBUG (temporary — remove after verifying PINs) ──
+app.get('/api/debug/pins', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT s.id, s.name, s.center, sp.pin, LENGTH(sp.pin) as pin_len, sp.role
+       FROM staff s LEFT JOIN staff_pins sp ON sp.staff_id = s.id
+       WHERE s.is_active = true ORDER BY s.name`
+    );
+    // Mask PINs for safety — show first char + length
+    const safe = rows.map(r => ({
+      id: r.id, name: r.name, center: r.center,
+      pin_preview: r.pin ? r.pin[0] + '***' : 'NO PIN',
+      pin_len: r.pin_len,
+      has_whitespace: r.pin ? r.pin !== r.pin.trim() : false,
+      role: r.role
+    }));
+    res.json(safe);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ── STAFF LIST ──
 app.get('/api/staff-list', async (req, res) => {
   try {
