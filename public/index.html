@@ -82,7 +82,7 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bot
 
 <div class="header" id="appHeader">
   <h1>TCC CACFP Time Entry</h1>
-  <div class="sub">The Children's Center <span style="opacity:.4;font-size:10px">v3.31c</span></div>
+  <div class="sub">The Children's Center <span style="opacity:.4;font-size:10px">v3.31d-sso</span></div>
 </div>
 
 <!-- LOGIN SCREEN -->
@@ -114,8 +114,6 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bot
     </div>
     <button class="btn btn-outline" onclick="directorLogin()">Director Sign In</button>
   </div>
-
-  <!-- First-time setup (only shows when no directors exist) -->
   <div class="card" id="bootstrapCard" style="display:none;border-color:var(--gold)">
     <h3 style="color:var(--gold)">First-time setup</h3>
     <p style="font-size:13px;color:var(--muted);margin-bottom:12px">No director accounts exist yet. Create the owner account to get started.</p>
@@ -140,36 +138,27 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bot
     </div>
     <button class="btn btn-sm btn-outline" onclick="logout()">Sign Out</button>
   </div>
-
   <div class="month-picker">
     <button onclick="changeMonth(-1)">&lsaquo;</button>
     <span class="month-label" id="staffMonthLabel">February 2026</span>
     <button onclick="changeMonth(1)">&rsaquo;</button>
   </div>
-
   <div class="month-total">
     <div class="big" id="staffTotalHours">0</div>
     <div class="lbl">Total CACFP food service hours this month</div>
   </div>
-
   <details style="margin-bottom:12px;background:#f8f7f4;border:1px solid #e8e6e2;border-radius:10px;padding:0">
-    <summary style="padding:12px;font-size:13px;font-weight:600;color:var(--navy);cursor:pointer">📋 How to Use This App</summary>
+    <summary style="padding:12px;font-size:13px;font-weight:600;color:var(--navy);cursor:pointer">How to Use This App</summary>
     <div style="padding:0 12px 12px;font-size:12px;line-height:1.5;color:#555">
       <p style="margin:8px 0"><strong>Daily CACFP Hours:</strong> Each day you work, enter the number of hours you spent on CACFP food service activities. This includes preparing meals, serving meals, cleaning up after meals, and any time directly related to the food program. Enter hours in quarter-hour increments (e.g., 1.5, 2.25, 3.75).</p>
-      <p style="margin:8px 0"><strong>Adult Meal (Meal? column):</strong> If you were served a meal during your shift, tap the checkbox for that day. This tracks adult meals served to program staff — MDE requires a daily count of all adult meals. Tap once for ✓ (yes, meal served), tap again to clear.</p>
+      <p style="margin:8px 0"><strong>Adult Meal (Meal? column):</strong> If you were served a meal during your shift, tap the checkbox for that day. This tracks adult meals served to program staff. Tap once for check (yes, meal served), tap again to clear.</p>
       <p style="margin:8px 0"><strong>End of Month:</strong> Once all your hours and meals are entered for the month, scroll to the bottom and sign by typing your full name. This locks your entries and submits them to your supervisor for approval.</p>
-      <p style="margin:8px 0"><strong>Need to make changes?</strong> If you haven't signed yet, just change any entry. If you already signed but your supervisor hasn't approved yet, use the "Unsign & Edit" button at the bottom. If your supervisor has already approved, contact them to reopen your month.</p>
+      <p style="margin:8px 0"><strong>Need to make changes?</strong> If you have not signed yet, just change any entry. If you already signed but your supervisor has not approved yet, use the Unsign and Edit button at the bottom. If your supervisor has already approved, contact them to reopen your month.</p>
       <p style="margin:8px 0;padding:8px;background:#fff8e1;border-radius:6px"><strong>Remember:</strong> Only record hours for actual CACFP food service work. Do not include hours spent on non-food-program activities. Your hours will be used to calculate food service labor costs on the CACFP claim.</p>
     </div>
   </details>
-
-  <div class="card" id="daysContainer">
-    <!-- Day rows injected here -->
-  </div>
-
-  <div id="sigSection">
-    <!-- Signature section injected here -->
-  </div>
+  <div class="card" id="daysContainer"></div>
+  <div id="sigSection"></div>
 </div>
 
 <!-- DIRECTOR/ADMIN SCREEN -->
@@ -181,28 +170,20 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bot
     </div>
     <button class="btn btn-sm btn-outline" onclick="logout()">Sign Out</button>
   </div>
-
   <div class="pill-tabs" id="dirMainTabs">
     <div class="pill-tab active" data-tab="status" onclick="dirTab('status')">Monthly Status</div>
     <div class="pill-tab" data-tab="roster" onclick="dirTab('roster')">Manage Staff</div>
     <div class="pill-tab" id="dirMgmtTab" data-tab="directors" style="display:none" onclick="dirTab('directors')">Directors</div>
   </div>
-
-  <!-- Monthly Status Tab -->
   <div id="dirStatusTab">
     <div class="month-picker">
       <button onclick="dirChangeMonth(-1)">&lsaquo;</button>
       <span class="month-label" id="dirMonthLabel">February 2026</span>
       <button onclick="dirChangeMonth(1)">&rsaquo;</button>
     </div>
-
-    <div class="pill-tabs" id="dirCenterTabs" style="margin-bottom:12px">
-    </div>
-
+    <div class="pill-tabs" id="dirCenterTabs" style="margin-bottom:12px"></div>
     <div class="card" id="dirStatusList">Loading...</div>
   </div>
-
-  <!-- Manage Staff Tab -->
   <div id="dirRosterTab" style="display:none">
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -217,8 +198,6 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bot
       <div id="rosterList">Loading...</div>
     </div>
   </div>
-
-  <!-- Director Management Tab (owner only) -->
   <div id="dirDirectorsTab" style="display:none">
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -314,30 +293,21 @@ let currentUser=null,currentRole=null,activeFY=null,currentDirector=null,isAdmin
 let staffMonth=null,staffMonthIdx=0;
 let dirMonth=null,dirMonthIdx=0,dirCenter='all';
 let dailyEntries=[],signatureData=null;
-
 let fiscalYears=[];
-
-// Store staff/director data for safe onclick references (avoids apostrophe-in-name bugs)
 let _rosterCache=[];
 let _dirStatusCache=[];
 let _directorsCache=[];
 
-// ── INIT ──
 async function init(){
   try{
     activeFY=await api('/api/fiscal-year');
     if(!activeFY){showToast('No active fiscal year configured','err');return;}
     try{fiscalYears=await api('/api/fiscal-years');}catch(e){fiscalYears=[activeFY];}
     await loadStaffList();
-    // Check if any directors exist — if not, show bootstrap
     try{
       const dirs=await api('/api/directors');
-      if(!dirs||dirs.length===0){
-        document.getElementById('bootstrapCard').style.display='block';
-      }
-    }catch(e){
-      document.getElementById('bootstrapCard').style.display='block';
-    }
+      if(!dirs||dirs.length===0){document.getElementById('bootstrapCard').style.display='block';}
+    }catch(e){document.getElementById('bootstrapCard').style.display='block';}
   }catch(e){showToast('Connection error','err');}
 }
 
@@ -365,7 +335,6 @@ async function loadStaffList(){
   }catch(e){}
 }
 
-// ── AUTH ──
 async function staffLogin(){
   const id=document.getElementById('loginStaffSelect').value;
   const pin=document.getElementById('loginPin').value.trim();
@@ -374,10 +343,9 @@ async function staffLogin(){
     const res=await api('/api/staff-login',{method:'POST',body:{staff_id:parseInt(id),pin}});
     currentUser=res;currentRole=res.role;
     isAdminOverride=res.admin_override||false;
-    document.getElementById('staffGreeting').textContent=(isAdminOverride?'⚙️ Admin editing: ':'Hello, ')+res.name.split(' ')[0]+(isAdminOverride?'':'!');
+    document.getElementById('staffGreeting').textContent=(isAdminOverride?'Admin editing: ':'Hello, ')+res.name.split(' ')[0]+(isAdminOverride?'':'!');
     document.getElementById('staffCenter').textContent=(res.center==='niles'?'Niles':'Peace Boulevard')+(isAdminOverride?' — Admin Override Mode':'');
-    initStaffMonth();
-    showScreen('staffScreen');
+    initStaffMonth();showScreen('staffScreen');
   }catch(e){showToast('Invalid PIN','err');}
 }
 
@@ -395,11 +363,7 @@ async function directorLogin(){
       roleText+=' — '+(cl[res.center]||res.center);
     }
     document.getElementById('dirRole').textContent=roleText;
-
-    // Show/hide tabs based on role
     document.getElementById('dirMgmtTab').style.display=(res.role==='owner')?'block':'none';
-
-    // Set center filter based on access
     if(res.can_view_all||res.role==='owner'||res.role==='admin'||res.role==='hr'){
       dirCenter='all';
       document.getElementById('dirCenterTabs').innerHTML=`
@@ -412,14 +376,10 @@ async function directorLogin(){
       document.getElementById('dirCenterTabs').innerHTML=`
         <div class="pill-tab active">${esc(cl[res.center]||res.center)}</div>`;
     }
-
-    // If admin with linked staff, also allow time entry
     if(res.role==='admin'&&res.also_staff_id){
       currentUser={staff_id:res.also_staff_id,name:res.name,center:'both',role:'admin'};
     }
-
-    initDirMonth();
-    showScreen('dirScreen');
+    initDirMonth();showScreen('dirScreen');
     loadMonthlyStatus();loadRoster();
     if(res.role==='owner')loadDirectors();
   }catch(e){showToast('Invalid PIN','err');}
@@ -427,166 +387,78 @@ async function directorLogin(){
 
 async function logout(){
   currentUser=null;currentRole=null;currentDirector=null;isAdminOverride=false;
-  // Restore to active FY
   try{activeFY=await api('/api/fiscal-year');}catch(e){}
   document.getElementById('loginPin').value='';
   document.getElementById('dirPin').value='';
   showScreen('loginScreen');
 }
 
-// ── STAFF TIME ENTRY ──
 function initStaffMonth(){
-  const now=new Date();
-  const m=now.getMonth();
+  const now=new Date();const m=now.getMonth();
   const months=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
-  staffMonth=months[m];
-  staffMonthIdx=MO.indexOf(staffMonth);
-  loadStaffMonth();
+  staffMonth=months[m];staffMonthIdx=MO.indexOf(staffMonth);loadStaffMonth();
 }
 
 function changeMonth(dir){
   const newIdx=staffMonthIdx+dir;
-  if(newIdx>=0&&newIdx<MO.length){
-    staffMonthIdx=newIdx;
-    staffMonth=MO[staffMonthIdx];
-    loadStaffMonth();
-  } else if(isAdminOverride){
-    // In admin override, allow crossing FY boundaries
-    if(newIdx<0){
-      // Go to previous FY
-      const prevFY=fiscalYears.find(f=>f.start_year===activeFY.start_year-1);
-      if(prevFY){activeFY=prevFY;staffMonthIdx=MO.length-1;staffMonth=MO[staffMonthIdx];loadStaffMonth();}
-    }else{
-      // Go to next FY
-      const nextFY=fiscalYears.find(f=>f.start_year===activeFY.start_year+1);
-      if(nextFY){activeFY=nextFY;staffMonthIdx=0;staffMonth=MO[staffMonthIdx];loadStaffMonth();}
-    }
+  if(newIdx>=0&&newIdx<MO.length){staffMonthIdx=newIdx;staffMonth=MO[staffMonthIdx];loadStaffMonth();}
+  else if(isAdminOverride){
+    if(newIdx<0){const prevFY=fiscalYears.find(f=>f.start_year===activeFY.start_year-1);if(prevFY){activeFY=prevFY;staffMonthIdx=MO.length-1;staffMonth=MO[staffMonthIdx];loadStaffMonth();}}
+    else{const nextFY=fiscalYears.find(f=>f.start_year===activeFY.start_year+1);if(nextFY){activeFY=nextFY;staffMonthIdx=0;staffMonth=MO[staffMonthIdx];loadStaffMonth();}}
   }
 }
 
 async function loadStaffMonth(){
-  const mk=staffMonth;
-  const year=fyYear(mk);
+  const mk=staffMonth;const year=fyYear(mk);
   const fyLabel=isAdminOverride?` (FY ${activeFY.label})`:'';
   document.getElementById('staffMonthLabel').textContent=ML[mk]+' '+year+fyLabel;
-
   try{
     dailyEntries=await api(`/api/daily-entries/${currentUser.staff_id}?fiscal_year_id=${activeFY.id}&month_key=${mk}`);
     signatureData=await api(`/api/signature/${currentUser.staff_id}?fiscal_year_id=${activeFY.id}&month_key=${mk}`);
   }catch(e){dailyEntries=[];signatureData=null;}
-
-  renderDays();
-  renderSignature();
+  renderDays();renderSignature();
 }
 
 function renderDays(){
-  const mk=staffMonth;
-  const year=fyYear(mk);
-  const numDays=getDaysInMonth(mk,year);
-  const today=new Date();
-  const todayDay=today.getDate();
+  const mk=staffMonth;const year=fyYear(mk);const numDays=getDaysInMonth(mk,year);
+  const today=new Date();const todayDay=today.getDate();
   const todayMonth=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'][today.getMonth()];
   const isAdmin=currentRole==='admin';
   const isSigned=isAdminOverride?false:(signatureData&&signatureData.status==='submitted');
-
   let totalFS=0,totalAdm=0,totalAdultMeals=0;
   const entryMap={};
   dailyEntries.forEach(e=>{entryMap[e.day_of_month]=e;totalFS+=parseFloat(e.food_service_hours)||0;totalAdm+=parseFloat(e.admin_hours)||0;if(e.adult_meal)totalAdultMeals++;});
   document.getElementById('staffTotalHours').textContent=totalFS.toFixed(1);
-
   let html='';
   if(isAdmin){
-    html+=`<div style="display:flex;gap:8px;margin-bottom:12px;font-size:12px;color:var(--muted)">
-      <div style="width:32px"></div><div style="width:36px"></div>
-      <div style="flex:1;text-align:center;font-weight:600;color:var(--navy)">Food Service</div>
-      <div style="flex:1;text-align:center;font-weight:600;color:var(--info)">Admin</div>
-      <div style="width:44px;text-align:center;font-weight:600;color:#8D6E00;font-size:10px">Meal</div>
-    </div>`;
+    html+=`<div style="display:flex;gap:8px;margin-bottom:12px;font-size:12px;color:var(--muted)"><div style="width:32px"></div><div style="width:36px"></div><div style="flex:1;text-align:center;font-weight:600;color:var(--navy)">Food Service</div><div style="flex:1;text-align:center;font-weight:600;color:var(--info)">Admin</div><div style="width:44px;text-align:center;font-weight:600;color:#8D6E00;font-size:10px">Meal</div></div>`;
   }else{
-    html+=`<div style="display:flex;gap:8px;margin-bottom:8px;font-size:11px;color:var(--muted)">
-      <div style="width:32px"></div><div style="width:36px"></div>
-      <div style="flex:1;text-align:center">CACFP Hours</div>
-      <div style="width:44px;text-align:center;font-size:10px">Meal?</div>
-    </div>`;
+    html+=`<div style="display:flex;gap:8px;margin-bottom:8px;font-size:11px;color:var(--muted)"><div style="width:32px"></div><div style="width:36px"></div><div style="flex:1;text-align:center">CACFP Hours</div><div style="width:44px;text-align:center;font-size:10px">Meal?</div></div>`;
   }
   for(let d=1;d<=numDays;d++){
-    const date=new Date(year,monthNum(mk),d);
-    const dow=date.getDay();
-    const isWeekend=dow===0||dow===6;
-    const isToday=todayMonth===mk&&todayDay===d;
-    const entry=entryMap[d];
-    const fsVal=entry?parseFloat(entry.food_service_hours)||0:0;
-    const admVal=entry?parseFloat(entry.admin_hours)||0:0;
-    const hasVal=fsVal>0||admVal>0;
-    const hasMeal=entry?.adult_meal||false;
-
-    html+=`<div class="day-row ${hasVal?'has-value':''}">
-      <div class="day-num ${isToday?'today':isWeekend?'weekend':''}">${d}</div>
-      <div class="day-name">${DOW[dow]}</div>
-      <div class="day-input" style="${isAdmin?'display:flex;gap:8px':''}">
-        <input type="number" step="0.25" min="0" max="24" placeholder="${isWeekend?'—':'0'}"
-          value="${fsVal>0?fsVal:''}"
-          data-day="${d}" data-type="fs"
-          onchange="saveDayEntry(${d},this.value,${isAdmin}?document.querySelector('[data-day=\\'${d}\\'][data-type=\\'adm\\']')?.value||0:0)"
-          ${isSigned?'disabled':''}
-          style="${isWeekend&&!hasVal?'opacity:.4':''}${isAdmin?';flex:1':''}"
-        >
-        ${isAdmin?`<input type="number" step="0.25" min="0" max="24" placeholder="${isWeekend?'—':'0'}"
-          value="${admVal>0?admVal:''}"
-          data-day="${d}" data-type="adm"
-          onchange="saveDayEntry(${d},document.querySelector('[data-day=\\'${d}\\'][data-type=\\'fs\\']')?.value||0,this.value)"
-          ${isSigned?'disabled':''}
-          style="flex:1;border-color:var(--info);${isWeekend&&!hasVal?'opacity:.4':''}"
-        >`:''}
-      </div>
-      <div style="width:44px;text-align:center">
-        <button onclick="toggleAdultMeal(${d},${!hasMeal})" ${isSigned?'disabled':''}
-          style="width:36px;height:36px;border-radius:8px;border:1.5px solid ${hasMeal?'var(--success)':'#ddd'};background:${hasMeal?'#e8f5e9':'#fff'};font-size:16px;cursor:pointer;padding:0"
-          title="Adult meal served?">${hasMeal?'✓':''}</button>
-      </div>
-    </div>`;
+    const date=new Date(year,monthNum(mk),d);const dow=date.getDay();const isWeekend=dow===0||dow===6;const isToday=todayMonth===mk&&todayDay===d;
+    const entry=entryMap[d];const fsVal=entry?parseFloat(entry.food_service_hours)||0:0;const admVal=entry?parseFloat(entry.admin_hours)||0:0;const hasVal=fsVal>0||admVal>0;const hasMeal=entry?.adult_meal||false;
+    html+=`<div class="day-row ${hasVal?'has-value':''}"><div class="day-num ${isToday?'today':isWeekend?'weekend':''}">${d}</div><div class="day-name">${DOW[dow]}</div><div class="day-input" style="${isAdmin?'display:flex;gap:8px':''}"><input type="number" step="0.25" min="0" max="24" placeholder="${isWeekend?'—':'0'}" value="${fsVal>0?fsVal:''}" data-day="${d}" data-type="fs" onchange="saveDayEntry(${d},this.value,${isAdmin}?document.querySelector('[data-day=\\'${d}\\'][data-type=\\'adm\\']')?.value||0:0)" ${isSigned?'disabled':''} style="${isWeekend&&!hasVal?'opacity:.4':''}${isAdmin?';flex:1':''}">`;
+    if(isAdmin){html+=`<input type="number" step="0.25" min="0" max="24" placeholder="${isWeekend?'—':'0'}" value="${admVal>0?admVal:''}" data-day="${d}" data-type="adm" onchange="saveDayEntry(${d},document.querySelector('[data-day=\\'${d}\\'][data-type=\\'fs\\']')?.value||0,this.value)" ${isSigned?'disabled':''} style="flex:1;border-color:var(--info);${isWeekend&&!hasVal?'opacity:.4':''}">`;}
+    html+=`</div><div style="width:44px;text-align:center"><button onclick="toggleAdultMeal(${d},${!hasMeal})" ${isSigned?'disabled':''} style="width:36px;height:36px;border-radius:8px;border:1.5px solid ${hasMeal?'var(--success)':'#ddd'};background:${hasMeal?'#e8f5e9':'#fff'};font-size:16px;cursor:pointer;padding:0" title="Adult meal served?">${hasMeal?'✓':''}</button></div></div>`;
   }
-  // Totals
   html+=`<div style="display:flex;gap:8px;margin-top:12px;font-size:13px">`;
   if(isAdmin){
-    html+=`<div style="flex:1;text-align:center;padding:8px;background:#f0f4ff;border-radius:8px">
-        <div style="font-weight:600;color:var(--navy)">${totalFS.toFixed(1)}</div>
-        <div style="font-size:11px;color:var(--muted)">Food service hrs</div>
-      </div>
-      <div style="flex:1;text-align:center;padding:8px;background:#e3f2fd;border-radius:8px">
-        <div style="font-weight:600;color:var(--info)">${totalAdm.toFixed(1)}</div>
-        <div style="font-size:11px;color:var(--muted)">Admin hrs</div>
-      </div>`;
+    html+=`<div style="flex:1;text-align:center;padding:8px;background:#f0f4ff;border-radius:8px"><div style="font-weight:600;color:var(--navy)">${totalFS.toFixed(1)}</div><div style="font-size:11px;color:var(--muted)">Food service hrs</div></div><div style="flex:1;text-align:center;padding:8px;background:#e3f2fd;border-radius:8px"><div style="font-weight:600;color:var(--info)">${totalAdm.toFixed(1)}</div><div style="font-size:11px;color:var(--muted)">Admin hrs</div></div>`;
   }
-  html+=`<div style="${isAdmin?'':'flex:1;'}text-align:center;padding:8px;background:#fff8e1;border-radius:8px;${isAdmin?'width:80px':''}">
-      <div style="font-weight:600;color:#8D6E00">${totalAdultMeals}</div>
-      <div style="font-size:11px;color:var(--muted)">Adult meals</div>
-    </div>
-  </div>`;
+  html+=`<div style="${isAdmin?'':'flex:1;'}text-align:center;padding:8px;background:#fff8e1;border-radius:8px;${isAdmin?'width:80px':''}"><div style="font-weight:600;color:#8D6E00">${totalAdultMeals}</div><div style="font-size:11px;color:var(--muted)">Adult meals</div></div></div>`;
   document.getElementById('daysContainer').innerHTML=html;
 }
 
 async function saveDayEntry(day,fsVal,admVal){
   try{
-    // Preserve existing adult_meal value
     const existing=dailyEntries.find(e=>e.day_of_month===day);
-    await api('/api/daily-entries',{method:'POST',body:{
-      staff_id:currentUser.staff_id,
-      fiscal_year_id:activeFY.id,
-      month_key:staffMonth,
-      day_of_month:day,
-      food_service_hours:parseFloat(fsVal)||0,
-      admin_hours:parseFloat(admVal)||0,
-      adult_meal:existing?.adult_meal||false
-    }});
-    // Refresh
+    await api('/api/daily-entries',{method:'POST',body:{staff_id:currentUser.staff_id,fiscal_year_id:activeFY.id,month_key:staffMonth,day_of_month:day,food_service_hours:parseFloat(fsVal)||0,admin_hours:parseFloat(admVal)||0,adult_meal:existing?.adult_meal||false}});
     dailyEntries=await api(`/api/daily-entries/${currentUser.staff_id}?fiscal_year_id=${activeFY.id}&month_key=${staffMonth}`);
     let total=0;dailyEntries.forEach(e=>total+=parseFloat(e.food_service_hours)||0);
     document.getElementById('staffTotalHours').textContent=total.toFixed(1);
-    const rows=document.querySelectorAll('.day-row');
-    if(rows[day-1]){rows[day-1].classList.toggle('has-value',parseFloat(fsVal)>0);}
-    renderSignature();
-    showToast('Saved','ok');
+    const rows=document.querySelectorAll('.day-row');if(rows[day-1]){rows[day-1].classList.toggle('has-value',parseFloat(fsVal)>0);}
+    renderSignature();showToast('Saved','ok');
   }catch(e){showToast('Save failed','err');}
 }
 
@@ -594,130 +466,54 @@ async function adminSign(){
   const sig=document.getElementById('adminSigInput').value.trim();
   if(!sig){showToast('Type your full name to sign','err');return;}
   try{
-    await api('/api/signature',{method:'POST',body:{
-      staff_id:currentUser.staff_id,
-      fiscal_year_id:activeFY.id,
-      month_key:staffMonth,
-      employee_signature:sig,
-      admin_override:true,
-      admin_note:`Hours transferred from physical Time & Attendance form by ${sig} on ${new Date().toLocaleDateString()}`
-    }});
+    await api('/api/signature',{method:'POST',body:{staff_id:currentUser.staff_id,fiscal_year_id:activeFY.id,month_key:staffMonth,employee_signature:sig,admin_override:true,admin_note:`Hours transferred from physical Time & Attendance form by ${sig} on ${new Date().toLocaleDateString()}`}});
     signatureData=await api(`/api/signature/${currentUser.staff_id}?fiscal_year_id=${activeFY.id}&month_key=${staffMonth}`);
-    renderSignature();
-    showToast(`✅ Signed for ${currentUser.name} — ${ML[staffMonth]}`,'ok');
+    renderSignature();showToast(`Signed for ${currentUser.name} — ${ML[staffMonth]}`,'ok');
   }catch(e){showToast('Error: '+e.message,'err');}
 }
 
 async function adminUnsign(){
   if(!confirm(`Unsign ${currentUser.name}'s ${ML[staffMonth]} entries to make changes?`))return;
   try{
-    await api('/api/unsign',{method:'POST',body:{
-      staff_id:currentUser.staff_id,
-      fiscal_year_id:activeFY.id,
-      month_key:staffMonth
-    }});
-    signatureData=null;
-    renderDays();renderSignature();
-    showToast('Unsigned — ready to edit','ok');
+    await api('/api/unsign',{method:'POST',body:{staff_id:currentUser.staff_id,fiscal_year_id:activeFY.id,month_key:staffMonth}});
+    signatureData=null;renderDays();renderSignature();showToast('Unsigned — ready to edit','ok');
   }catch(e){showToast('Error: '+e.message,'err');}
 }
 
 async function toggleAdultMeal(day,val){
   try{
     const existing=dailyEntries.find(e=>e.day_of_month===day);
-    await api('/api/daily-entries',{method:'POST',body:{
-      staff_id:currentUser.staff_id,
-      fiscal_year_id:activeFY.id,
-      month_key:staffMonth,
-      day_of_month:day,
-      food_service_hours:parseFloat(existing?.food_service_hours)||0,
-      admin_hours:parseFloat(existing?.admin_hours)||0,
-      adult_meal:val
-    }});
+    await api('/api/daily-entries',{method:'POST',body:{staff_id:currentUser.staff_id,fiscal_year_id:activeFY.id,month_key:staffMonth,day_of_month:day,food_service_hours:parseFloat(existing?.food_service_hours)||0,admin_hours:parseFloat(existing?.admin_hours)||0,adult_meal:val}});
     dailyEntries=await api(`/api/daily-entries/${currentUser.staff_id}?fiscal_year_id=${activeFY.id}&month_key=${staffMonth}`);
-    renderDays();renderSignature();
-    showToast(val?'Adult meal ✓':'Adult meal cleared','ok');
+    renderDays();renderSignature();showToast(val?'Adult meal ✓':'Adult meal cleared','ok');
   }catch(e){showToast('Save failed','err');}
 }
 
 function renderSignature(){
   const isSigned=isAdminOverride?false:(signatureData&&signatureData.status==='submitted');
   let total=0;dailyEntries.forEach(e=>total+=parseFloat(e.food_service_hours)||0);
-
   if(isAdminOverride){
     let total=0;dailyEntries.forEach(e=>total+=parseFloat(e.food_service_hours)||0);
     const hasSig=signatureData&&(signatureData.status==='submitted'||signatureData.status==='approved');
     const isApproved=signatureData&&signatureData.status==='approved';
     const sigNote=signatureData?.admin_note||'';
-
-    let sigHtml=`<div style="padding:12px;background:#fff3e0;border:1px solid #ffcc80;border-radius:10px;margin-top:12px">
-      <div style="text-align:center;font-size:13px;font-weight:600;color:#e65100;margin-bottom:8px">⚙️ Admin Override Mode — ${esc(currentUser.name)}</div>`;
-
+    let sigHtml=`<div style="padding:12px;background:#fff3e0;border:1px solid #ffcc80;border-radius:10px;margin-top:12px"><div style="text-align:center;font-size:13px;font-weight:600;color:#e65100;margin-bottom:8px">Admin Override Mode — ${esc(currentUser.name)}</div>`;
     if(hasSig){
-      sigHtml+=`<div style="padding:10px;background:#e8f5e9;border-radius:8px;margin-bottom:8px">
-        <div style="font-size:12px;font-weight:600;color:var(--success)">${isApproved?'✅ Approved':'📝 Signed & Submitted'}</div>
-        <div style="font-size:12px;margin-top:2px"><strong>Signed by:</strong> ${esc(signatureData.employee_signature)}</div>
-        <div style="font-size:11px;color:var(--muted)">${new Date(signatureData.employee_signed_at).toLocaleDateString()}</div>
-        ${sigNote?`<div style="font-size:11px;color:#e65100;margin-top:4px;font-style:italic">${esc(sigNote)}</div>`:''}
-      </div>
-      <div style="display:flex;gap:8px;justify-content:center">
-        <button class="btn btn-sm btn-outline" onclick="adminUnsign()">✏️ Unsign & Re-enter</button>
-        <button class="btn btn-sm btn-outline" onclick="logout()">← Switch Staff</button>
-      </div>`;
-    } else if(total>0){
-      sigHtml+=`<div style="font-size:12px;color:var(--muted);margin-bottom:8px;text-align:center">Hours entered: <strong>${total.toFixed(1)}</strong>. Sign below to certify these hours were transferred from the physical T&A form.</div>
-      <div class="field-group" style="margin-bottom:8px">
-        <label style="font-size:12px;font-weight:600">Administrator signature (type your full name)</label>
-        <input type="text" id="adminSigInput" placeholder="e.g., Mary Wardlaw" style="padding:10px;font-size:16px;text-align:center">
-      </div>
-      <div style="padding:8px;background:#f5f5f5;border-radius:6px;margin-bottom:8px;font-size:11px;color:#555">
-        <strong>Certification:</strong> I certify that the hours entered above were accurately transferred from the physical Time & Attendance form on file for ${esc(currentUser.name)}, ${ML[staffMonth]} ${fyYear(staffMonth)}.
-      </div>
-      <div style="display:flex;gap:8px;justify-content:center">
-        <button class="btn btn-navy" onclick="adminSign()">✍️ Sign & Submit</button>
-        <button class="btn btn-sm btn-outline" onclick="logout()">← Switch Staff</button>
-        <button class="btn btn-sm btn-danger" onclick="clearMonth()">🗑️ Clear</button>
-      </div>`;
-    } else {
-      sigHtml+=`<div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:8px">Enter daily hours above, then sign to certify.</div>
-      <div style="display:flex;gap:8px;justify-content:center">
-        <button class="btn btn-sm btn-outline" onclick="logout()">← Switch Staff</button>
-      </div>`;
+      sigHtml+=`<div style="padding:10px;background:#e8f5e9;border-radius:8px;margin-bottom:8px"><div style="font-size:12px;font-weight:600;color:var(--success)">${isApproved?'Approved':'Signed & Submitted'}</div><div style="font-size:12px;margin-top:2px"><strong>Signed by:</strong> ${esc(signatureData.employee_signature)}</div><div style="font-size:11px;color:var(--muted)">${new Date(signatureData.employee_signed_at).toLocaleDateString()}</div>${sigNote?`<div style="font-size:11px;color:#e65100;margin-top:4px;font-style:italic">${esc(sigNote)}</div>`:''}</div><div style="display:flex;gap:8px;justify-content:center"><button class="btn btn-sm btn-outline" onclick="adminUnsign()">Unsign & Re-enter</button><button class="btn btn-sm btn-outline" onclick="logout()">Switch Staff</button></div>`;
+    }else if(total>0){
+      sigHtml+=`<div style="font-size:12px;color:var(--muted);margin-bottom:8px;text-align:center">Hours entered: <strong>${total.toFixed(1)}</strong>. Sign below to certify these hours were transferred from the physical T&A form.</div><div class="field-group" style="margin-bottom:8px"><label style="font-size:12px;font-weight:600">Administrator signature (type your full name)</label><input type="text" id="adminSigInput" placeholder="e.g., Mary Wardlaw" style="padding:10px;font-size:16px;text-align:center"></div><div style="padding:8px;background:#f5f5f5;border-radius:6px;margin-bottom:8px;font-size:11px;color:#555"><strong>Certification:</strong> I certify that the hours entered above were accurately transferred from the physical Time & Attendance form on file for ${esc(currentUser.name)}, ${ML[staffMonth]} ${fyYear(staffMonth)}.</div><div style="display:flex;gap:8px;justify-content:center"><button class="btn btn-navy" onclick="adminSign()">Sign & Submit</button><button class="btn btn-sm btn-outline" onclick="logout()">Switch Staff</button><button class="btn btn-sm btn-danger" onclick="clearMonth()">Clear</button></div>`;
+    }else{
+      sigHtml+=`<div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:8px">Enter daily hours above, then sign to certify.</div><div style="display:flex;gap:8px;justify-content:center"><button class="btn btn-sm btn-outline" onclick="logout()">Switch Staff</button></div>`;
     }
-    sigHtml+=`</div>`;
-    document.getElementById('sigSection').innerHTML=sigHtml;
-    return;
+    sigHtml+=`</div>`;document.getElementById('sigSection').innerHTML=sigHtml;return;
   }
-
   if(isSigned){
     const isApproved=signatureData.status==='approved';
-    document.getElementById('sigSection').innerHTML=`
-      <div class="sig-box signed">
-        <div style="font-size:13px;color:var(--success);font-weight:600">Signed and submitted</div>
-        <div class="sig-name">${esc(signatureData.employee_signature)}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px">${new Date(signatureData.employee_signed_at).toLocaleDateString()}</div>
-      </div>
-      ${isApproved?
-        `<p style="font-size:12px;color:var(--muted);text-align:center">This month has been approved by your supervisor. Contact them to make changes.</p>`
-        :`<div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
-          <button class="btn btn-sm btn-outline" onclick="unsignMonth()">✏️ Unsign & Edit</button>
-          <button class="btn btn-sm btn-danger" onclick="clearMonth()">🗑️ Clear All ${ML[staffMonth]} Entries</button>
-        </div>
-        <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:6px">Unsign to edit hours. Clear to delete all entries and start over.</p>`
-      }`;
+    document.getElementById('sigSection').innerHTML=`<div class="sig-box signed"><div style="font-size:13px;color:var(--success);font-weight:600">Signed and submitted</div><div class="sig-name">${esc(signatureData.employee_signature)}</div><div style="font-size:12px;color:var(--muted);margin-top:4px">${new Date(signatureData.employee_signed_at).toLocaleDateString()}</div></div>${isApproved?`<p style="font-size:12px;color:var(--muted);text-align:center">This month has been approved by your supervisor. Contact them to make changes.</p>`:`<div style="display:flex;gap:8px;justify-content:center;margin-top:8px"><button class="btn btn-sm btn-outline" onclick="unsignMonth()">Unsign & Edit</button><button class="btn btn-sm btn-danger" onclick="clearMonth()">Clear All ${ML[staffMonth]} Entries</button></div><p style="font-size:11px;color:var(--muted);text-align:center;margin-top:6px">Unsign to edit hours. Clear to delete all entries and start over.</p>`}`;
   }else if(total>0){
-    document.getElementById('sigSection').innerHTML=`
-      <div class="sig-box">
-        <div style="font-size:13px;color:var(--muted);margin-bottom:8px">When your hours are complete for this month, sign below:</div>
-        <div class="field-group" style="text-align:left;margin:12px 0">
-          <label>Type your full name as digital signature</label>
-          <input type="text" id="sigNameInput" placeholder="${esc(currentUser.name)}" style="font-size:16px;font-style:italic">
-        </div>
-        <button class="btn btn-success" onclick="submitSignature()">Sign and Submit ${ML[staffMonth]} Hours</button>
-      </div>`;
+    document.getElementById('sigSection').innerHTML=`<div class="sig-box"><div style="font-size:13px;color:var(--muted);margin-bottom:8px">When your hours are complete for this month, sign below:</div><div class="field-group" style="text-align:left;margin:12px 0"><label>Type your full name as digital signature</label><input type="text" id="sigNameInput" placeholder="${esc(currentUser.name)}" style="font-size:16px;font-style:italic"></div><button class="btn btn-success" onclick="submitSignature()">Sign and Submit ${ML[staffMonth]} Hours</button></div>`;
   }else{
-    document.getElementById('sigSection').innerHTML=`
-      <p style="font-size:13px;color:var(--muted);text-align:center;padding:20px 0">Enter your daily CACFP food service hours above. Sign at the end of the month.</p>`;
+    document.getElementById('sigSection').innerHTML=`<p style="font-size:13px;color:var(--muted);text-align:center;padding:20px 0">Enter your daily CACFP food service hours above. Sign at the end of the month.</p>`;
   }
 }
 
@@ -726,78 +522,51 @@ async function submitSignature(){
   if(!name){showToast('Type your full name to sign','err');return;}
   if(!confirm(`Sign and submit your ${ML[staffMonth]} CACFP hours as "${name}"? You won't be able to edit after signing.`))return;
   try{
-    await api('/api/signature',{method:'POST',body:{
-      staff_id:currentUser.staff_id,
-      fiscal_year_id:activeFY.id,
-      month_key:staffMonth,
-      employee_signature:name
-    }});
+    await api('/api/signature',{method:'POST',body:{staff_id:currentUser.staff_id,fiscal_year_id:activeFY.id,month_key:staffMonth,employee_signature:name}});
     signatureData=await api(`/api/signature/${currentUser.staff_id}?fiscal_year_id=${activeFY.id}&month_key=${staffMonth}`);
-    renderDays();renderSignature();
-    showToast('Signed and submitted!','ok');
+    renderDays();renderSignature();showToast('Signed and submitted!','ok');
   }catch(e){showToast('Error: '+e.message,'err');}
 }
 
 async function unsignMonth(){
   if(!confirm(`Remove your signature for ${ML[staffMonth]}? Your hours will still be saved but you can edit them.`))return;
   try{
-    await api('/api/unsign',{method:'POST',body:{
-      staff_id:currentUser.staff_id,
-      fiscal_year_id:activeFY.id,
-      month_key:staffMonth
-    }});
-    signatureData=null;
-    renderDays();renderSignature();
-    showToast('Signature removed — you can now edit your hours','ok');
+    await api('/api/unsign',{method:'POST',body:{staff_id:currentUser.staff_id,fiscal_year_id:activeFY.id,month_key:staffMonth}});
+    signatureData=null;renderDays();renderSignature();showToast('Signature removed — you can now edit your hours','ok');
   }catch(e){showToast(e.message,'err');}
 }
 
 async function clearMonth(){
-  if(!confirm(`DELETE all your ${ML[staffMonth]} entries? This cannot be undone. All daily hours and your signature will be removed.`))return;
+  if(!confirm(`DELETE all your ${ML[staffMonth]} entries? This cannot be undone.`))return;
   if(!confirm(`Are you sure? This will permanently delete all ${ML[staffMonth]} data.`))return;
   try{
-    await api('/api/clear-month',{method:'POST',body:{
-      staff_id:currentUser.staff_id,
-      fiscal_year_id:activeFY.id,
-      month_key:staffMonth
-    }});
-    dailyEntries=[];signatureData=null;
-    renderDays();renderSignature();
-    showToast(`${ML[staffMonth]} entries cleared`,'ok');
+    await api('/api/clear-month',{method:'POST',body:{staff_id:currentUser.staff_id,fiscal_year_id:activeFY.id,month_key:staffMonth}});
+    dailyEntries=[];signatureData=null;renderDays();renderSignature();showToast(`${ML[staffMonth]} entries cleared`,'ok');
   }catch(e){showToast(e.message,'err');}
 }
 
-// ── DIRECTOR DASHBOARD ──
 function initDirMonth(){
-  const now=new Date();
-  const months=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
-  dirMonth=months[now.getMonth()];
-  dirMonthIdx=MO.indexOf(dirMonth);
+  const now=new Date();const months=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  dirMonth=months[now.getMonth()];dirMonthIdx=MO.indexOf(dirMonth);
 }
 
 function dirChangeMonth(dir){
-  dirMonthIdx=Math.max(0,Math.min(MO.length-1,dirMonthIdx+dir));
-  dirMonth=MO[dirMonthIdx];
-  document.getElementById('dirMonthLabel').textContent=ML[dirMonth]+' '+fyYear(dirMonth);
-  loadMonthlyStatus();
+  dirMonthIdx=Math.max(0,Math.min(MO.length-1,dirMonthIdx+dir));dirMonth=MO[dirMonthIdx];
+  document.getElementById('dirMonthLabel').textContent=ML[dirMonth]+' '+fyYear(dirMonth);loadMonthlyStatus();
 }
 
 function dirTab(tab){
-  document.querySelectorAll('#dirMainTabs .pill-tab').forEach(t=>{
-    t.classList.toggle('active', t.getAttribute('data-tab') === tab);
-  });
+  document.querySelectorAll('#dirMainTabs .pill-tab').forEach(t=>{t.classList.toggle('active',t.getAttribute('data-tab')===tab);});
   document.getElementById('dirStatusTab').style.display=tab==='status'?'block':'none';
   document.getElementById('dirRosterTab').style.display=tab==='roster'?'block':'none';
   document.getElementById('dirDirectorsTab').style.display=tab==='directors'?'block':'none';
-  if(tab==='roster')loadRoster();
-  if(tab==='directors')loadDirectors();
+  if(tab==='roster')loadRoster();if(tab==='directors')loadDirectors();
 }
 
 function dirCenterFilter(c){
   dirCenter=c;
   document.querySelectorAll('#dirStatusTab .pill-tabs .pill-tab').forEach(t=>{
-    t.classList.toggle('active',t.textContent.toLowerCase()===c||
-      (c==='all'&&t.textContent==='All')||(c==='niles'&&t.textContent==='Niles')||(c==='peace'&&t.textContent==='Peace'));
+    t.classList.toggle('active',t.textContent.toLowerCase()===c||(c==='all'&&t.textContent==='All')||(c==='niles'&&t.textContent==='Niles')||(c==='peace'&&t.textContent==='Peace'));
   });
   loadMonthlyStatus();
 }
@@ -806,322 +575,122 @@ async function loadMonthlyStatus(){
   try{
     const centerParam=dirCenter!=='all'?`&center=${dirCenter}`:'';
     const data=await api(`/api/manage/monthly-status?month_key=${dirMonth}${centerParam}`);
-    const yr=fyYear(dirMonth);
-    document.getElementById('dirMonthLabel').textContent=ML[dirMonth]+' '+yr;
-    let staff=data.staff||[];
-    _dirStatusCache=staff;
-
-    const submitted=staff.filter(s=>s.status==='submitted').length;
-    const total=staff.length;
-
-    let html=`<div style="display:flex;gap:8px;margin-bottom:12px">
-      <div style="flex:1;text-align:center;padding:10px;background:var(--bg);border-radius:8px">
-        <div style="font-size:20px;font-weight:700;color:var(--success)">${submitted}</div>
-        <div style="font-size:11px;color:var(--muted)">Submitted</div>
-      </div>
-      <div style="flex:1;text-align:center;padding:10px;background:var(--bg);border-radius:8px">
-        <div style="font-size:20px;font-weight:700;color:var(--error)">${total-submitted}</div>
-        <div style="font-size:11px;color:var(--muted)">Pending</div>
-      </div>
-      <div style="flex:1;text-align:center;padding:10px;background:var(--bg);border-radius:8px">
-        <div style="font-size:20px;font-weight:700">${total}</div>
-        <div style="font-size:11px;color:var(--muted)">Total</div>
-      </div>
-    </div>`;
-
+    const yr=fyYear(dirMonth);document.getElementById('dirMonthLabel').textContent=ML[dirMonth]+' '+yr;
+    let staff=data.staff||[];_dirStatusCache=staff;
+    const submitted=staff.filter(s=>s.status==='submitted').length;const total=staff.length;
+    let html=`<div style="display:flex;gap:8px;margin-bottom:12px"><div style="flex:1;text-align:center;padding:10px;background:var(--bg);border-radius:8px"><div style="font-size:20px;font-weight:700;color:var(--success)">${submitted}</div><div style="font-size:11px;color:var(--muted)">Submitted</div></div><div style="flex:1;text-align:center;padding:10px;background:var(--bg);border-radius:8px"><div style="font-size:20px;font-weight:700;color:var(--error)">${total-submitted}</div><div style="font-size:11px;color:var(--muted)">Pending</div></div><div style="flex:1;text-align:center;padding:10px;background:var(--bg);border-radius:8px"><div style="font-size:20px;font-weight:700">${total}</div><div style="font-size:11px;color:var(--muted)">Total</div></div></div>`;
     if(!staff.length){html+='<p style="color:var(--muted);text-align:center;padding:20px">No staff found</p>';}
-    else{
-      for(let i=0;i<staff.length;i++){
-        const s=staff[i];
-        const status=s.status||'none';
-        const statusLabel=status==='submitted'?'Submitted':s.days_entered>0?'In progress':'Not started';
-        const statusClass=status==='submitted'?'submitted':s.days_entered>0?'in_progress':'none';
-        const centerLabel=s.center==='niles'?'Niles':'Peace';
-        html+=`<div class="staff-status-row">
-          <div class="info">
-            <div class="name">${esc(s.name)}</div>
-            <div class="meta"><span class="center-badge">${centerLabel}</span> ${s.days_entered} days entered, ${parseFloat(s.total_fs).toFixed(1)} FS hrs</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:6px">
-            <span class="status-badge ${statusClass}">${statusLabel}</span>
-            ${status==='submitted'||s.days_entered>0?`<button class="btn btn-sm btn-outline" style="font-size:.7rem;padding:4px 8px" onclick="dirReopenMonth(${i})">Reopen</button>`:''}
-          </div>
-        </div>`;
-      }
-    }
+    else{for(let i=0;i<staff.length;i++){const s=staff[i];const status=s.status||'none';const statusLabel=status==='submitted'?'Submitted':s.days_entered>0?'In progress':'Not started';const statusClass=status==='submitted'?'submitted':s.days_entered>0?'in_progress':'none';const centerLabel=s.center==='niles'?'Niles':'Peace';
+    html+=`<div class="staff-status-row"><div class="info"><div class="name">${esc(s.name)}</div><div class="meta"><span class="center-badge">${centerLabel}</span> ${s.days_entered} days entered, ${parseFloat(s.total_fs).toFixed(1)} FS hrs</div></div><div style="display:flex;align-items:center;gap:6px"><span class="status-badge ${statusClass}">${statusLabel}</span>${status==='submitted'||s.days_entered>0?`<button class="btn btn-sm btn-outline" style="font-size:.7rem;padding:4px 8px" onclick="dirReopenMonth(${i})">Reopen</button>`:''}</div></div>`;}}
     document.getElementById('dirStatusList').innerHTML=html;
   }catch(e){document.getElementById('dirStatusList').innerHTML='<p style="color:var(--error)">Error loading data</p>';}
 }
 
-// Safe reopen using cached data (no apostrophe issues)
 async function dirReopenMonth(idx){
-  const s=_dirStatusCache[idx];
-  if(!s)return;
-  if(!confirm(`Reopen ${s.name}'s ${ML[dirMonth]} time entry? Their signature will be removed and they can edit their hours.`))return;
-  try{
-    const fyRes=await api('/api/fiscal-year');
-    await api('/api/reopen-month',{method:'POST',body:{staff_id:s.id,fiscal_year_id:fyRes.id,month_key:dirMonth}});
-    showToast(`${s.name}'s ${ML[dirMonth]} reopened`,'ok');
-    loadMonthlyStatus();
-  }catch(e){showToast('Error: '+e.message,'err');}
+  const s=_dirStatusCache[idx];if(!s)return;
+  if(!confirm(`Reopen ${s.name}'s ${ML[dirMonth]} time entry?`))return;
+  try{const fyRes=await api('/api/fiscal-year');await api('/api/reopen-month',{method:'POST',body:{staff_id:s.id,fiscal_year_id:fyRes.id,month_key:dirMonth}});showToast(`${s.name}'s ${ML[dirMonth]} reopened`,'ok');loadMonthlyStatus();}catch(e){showToast('Error: '+e.message,'err');}
 }
 
-// ── ROSTER MANAGEMENT ──
 function canSeeWages(){return currentDirector&&(currentDirector.role==='owner'||currentDirector.role==='admin');}
 
 async function loadRoster(){
   try{
     const showInactive=document.getElementById('showInactiveToggle')?.checked;
-    const parts=[];
-    if(dirCenter!=='all')parts.push('center='+dirCenter);
-    if(showInactive)parts.push('include_inactive=1');
-    const qs=parts.length?'?'+parts.join('&'):'';
-    const staff=await api('/api/manage/staff'+qs);
-    _rosterCache=staff;
-    const showWage=canSeeWages();
+    const parts=[];if(dirCenter!=='all')parts.push('center='+dirCenter);if(showInactive)parts.push('include_inactive=1');
+    const qs=parts.length?'?'+parts.join('&'):'';const staff=await api('/api/manage/staff'+qs);_rosterCache=staff;const showWage=canSeeWages();
     let html='';
-    for(let i=0;i<staff.length;i++){
-      const s=staff[i];
-      const centerLabel=s.center==='niles'?'Niles':'Peace';
-      const hasPin=!!s.pin;
-      const wageText=showWage?` $${parseFloat(s.hourly_rate||0).toFixed(2)}/hr`:'';
-      const isInactive=s.is_active===false;
-      html+=`<div class="roster-row ${isInactive?'inactive-row':''}">
-        <div>
-          <div class="name">${esc(s.name)} ${isInactive?'<span class="inactive-badge">Removed</span>':''}</div>
-          <div class="detail"><span class="center-badge">${centerLabel}</span>${wageText} ${hasPin?'<span style="color:var(--success)">PIN set</span>':'<span style="color:var(--error)">No PIN</span>'} ${s.role==='admin'?'<span style="color:var(--info)">(Admin)</span>':''}</div>
-        </div>
-        <div class="actions">
-          ${isInactive
-            ?`<button class="btn btn-sm btn-success" onclick="reactivateStaffByIdx(${i})">Restore</button>`
-            :`<button class="btn btn-sm btn-outline" onclick="editStaffByIdx(${i})">Edit</button>
-              <button class="btn btn-sm btn-danger" onclick="removeStaffByIdx(${i})">Remove</button>`
-          }
-        </div>
-      </div>`;
-    }
+    for(let i=0;i<staff.length;i++){const s=staff[i];const centerLabel=s.center==='niles'?'Niles':'Peace';const hasPin=!!s.pin;const wageText=showWage?` $${parseFloat(s.hourly_rate||0).toFixed(2)}/hr`:'';const isInactive=s.is_active===false;
+    html+=`<div class="roster-row ${isInactive?'inactive-row':''}"><div><div class="name">${esc(s.name)} ${isInactive?'<span class="inactive-badge">Removed</span>':''}</div><div class="detail"><span class="center-badge">${centerLabel}</span>${wageText} ${hasPin?'<span style="color:var(--success)">PIN set</span>':'<span style="color:var(--error)">No PIN</span>'} ${s.role==='admin'?'<span style="color:var(--info)">(Admin)</span>':''}</div></div><div class="actions">${isInactive?`<button class="btn btn-sm btn-success" onclick="reactivateStaffByIdx(${i})">Restore</button>`:`<button class="btn btn-sm btn-outline" onclick="editStaffByIdx(${i})">Edit</button><button class="btn btn-sm btn-danger" onclick="removeStaffByIdx(${i})">Remove</button>`}</div></div>`;}
     document.getElementById('rosterList').innerHTML=html||'<p style="color:var(--muted);text-align:center">No staff yet</p>';
   }catch(e){console.error('loadRoster error',e);}
 }
 
-function showAddStaff(){
-  document.getElementById('addStaffTitle').textContent='Add new staff';
-  document.getElementById('editStaffId').value='';
-  document.getElementById('newStaffName').value='';
-  document.getElementById('newStaffRate').value='';
-  document.getElementById('newStaffPin').value='';
-  document.getElementById('newStaffRole').value='staff';
-  document.getElementById('newStaffName').removeAttribute('disabled');
-  document.getElementById('newStaffCenter').removeAttribute('disabled');
-  document.getElementById('rateFieldGroup').style.display=canSeeWages()?'block':'none';
-  document.getElementById('staffModal').classList.add('open');
-}
+function showAddStaff(){document.getElementById('addStaffTitle').textContent='Add new staff';document.getElementById('editStaffId').value='';document.getElementById('newStaffName').value='';document.getElementById('newStaffRate').value='';document.getElementById('newStaffPin').value='';document.getElementById('newStaffRole').value='staff';document.getElementById('newStaffName').removeAttribute('disabled');document.getElementById('newStaffCenter').removeAttribute('disabled');document.getElementById('rateFieldGroup').style.display=canSeeWages()?'block':'none';document.getElementById('staffModal').classList.add('open');}
 
-function editStaffByIdx(idx){
-  const s=_rosterCache[idx];
-  if(!s)return;
-  document.getElementById('addStaffTitle').textContent='Edit '+s.name;
-  document.getElementById('editStaffId').value=s.id;
-  document.getElementById('newStaffName').value=s.name;
-  document.getElementById('newStaffName').setAttribute('disabled','true');
-  document.getElementById('newStaffCenter').value=s.center;
-  document.getElementById('newStaffCenter').setAttribute('disabled','true');
-  document.getElementById('newStaffRate').value=canSeeWages()?(s.hourly_rate||''):'';
-  document.getElementById('newStaffPin').value=s.pin||'';
-  document.getElementById('newStaffRole').value=s.role||'staff';
-  document.getElementById('rateFieldGroup').style.display=canSeeWages()?'block':'none';
-  document.getElementById('staffModal').classList.add('open');
-}
+function editStaffByIdx(idx){const s=_rosterCache[idx];if(!s)return;document.getElementById('addStaffTitle').textContent='Edit '+s.name;document.getElementById('editStaffId').value=s.id;document.getElementById('newStaffName').value=s.name;document.getElementById('newStaffName').setAttribute('disabled','true');document.getElementById('newStaffCenter').value=s.center;document.getElementById('newStaffCenter').setAttribute('disabled','true');document.getElementById('newStaffRate').value=canSeeWages()?(s.hourly_rate||''):'';document.getElementById('newStaffPin').value=s.pin||'';document.getElementById('newStaffRole').value=s.role||'staff';document.getElementById('rateFieldGroup').style.display=canSeeWages()?'block':'none';document.getElementById('staffModal').classList.add('open');}
 
 function hideAddStaff(){document.getElementById('staffModal').classList.remove('open');}
 
 async function saveStaff(){
-  const id=document.getElementById('editStaffId').value;
-  const name=document.getElementById('newStaffName').value.trim();
-  const center=document.getElementById('newStaffCenter').value;
-  const rateInput=document.getElementById('newStaffRate').value;
-  const rate=parseFloat(rateInput)||0;
-  const pin=document.getElementById('newStaffPin').value.trim();
-  const role=document.getElementById('newStaffRole').value;
-  if(!name){showToast('Enter a name','err');return;}
-  if(!pin||pin.length<4){showToast('PIN must be at least 4 characters','err');return;}
-
+  const id=document.getElementById('editStaffId').value;const name=document.getElementById('newStaffName').value.trim();const center=document.getElementById('newStaffCenter').value;const rateInput=document.getElementById('newStaffRate').value;const rate=parseFloat(rateInput)||0;const pin=document.getElementById('newStaffPin').value.trim();const role=document.getElementById('newStaffRole').value;
+  if(!name){showToast('Enter a name','err');return;}if(!pin||pin.length<4){showToast('PIN must be at least 4 characters','err');return;}
   try{
-    if(id){
-      await api(`/api/manage/staff/${id}/pin`,{method:'PUT',body:{pin,role}});
-      if(canSeeWages()&&rateInput!==''){
-        await api(`/api/manage/staff/${id}/rate`,{method:'PUT',body:{hourly_rate:rate}});
-      }
-    }else{
-      await api('/api/manage/staff',{method:'POST',body:{name,center,hourly_rate:canSeeWages()?rate:0,pin,role}});
-    }
-    hideAddStaff();loadRoster();loadStaffList();
-    showToast(id?'Updated!':'Added!','ok');
+    if(id){await api(`/api/manage/staff/${id}/pin`,{method:'PUT',body:{pin,role}});if(canSeeWages()&&rateInput!==''){await api(`/api/manage/staff/${id}/rate`,{method:'PUT',body:{hourly_rate:rate}});}}
+    else{await api('/api/manage/staff',{method:'POST',body:{name,center,hourly_rate:canSeeWages()?rate:0,pin,role}});}
+    hideAddStaff();loadRoster();loadStaffList();showToast(id?'Updated!':'Added!','ok');
   }catch(e){showToast('Error: '+e.message,'err');}
 }
 
-async function removeStaffByIdx(idx){
-  const s=_rosterCache[idx];
-  if(!s)return;
-  if(!confirm(`Remove ${s.name}? They will no longer be able to log in.`))return;
-  try{
-    await api(`/api/manage/staff/${s.id}/deactivate`,{method:'PUT'});
-    loadRoster();loadStaffList();showToast(s.name+' removed','ok');
-  }catch(e){showToast('Error','err');}
-}
+async function removeStaffByIdx(idx){const s=_rosterCache[idx];if(!s)return;if(!confirm(`Remove ${s.name}?`))return;try{await api(`/api/manage/staff/${s.id}/deactivate`,{method:'PUT'});loadRoster();loadStaffList();showToast(s.name+' removed','ok');}catch(e){showToast('Error','err');}}
+async function reactivateStaffByIdx(idx){const s=_rosterCache[idx];if(!s)return;if(!confirm(`Restore ${s.name}?`))return;try{await api(`/api/manage/staff/${s.id}/reactivate`,{method:'PUT'});loadRoster();loadStaffList();showToast(s.name+' restored','ok');}catch(e){showToast('Error','err');}}
 
-async function reactivateStaffByIdx(idx){
-  const s=_rosterCache[idx];
-  if(!s)return;
-  if(!confirm(`Restore ${s.name}? They will be able to log in again.`))return;
-  try{
-    await api(`/api/manage/staff/${s.id}/reactivate`,{method:'PUT'});
-    loadRoster();loadStaffList();showToast(s.name+' restored','ok');
-  }catch(e){showToast('Error','err');}
-}
-
-// ── DIRECTOR MANAGEMENT (owner only) ──
 async function loadDirectors(){
-  try{
-    const dirs=await api('/api/directors');
-    _directorsCache=dirs;
-    const roleLabels={owner:'Owner',admin:'Admin',hr:'HR',director:'Director'};
-    const centerLabels={niles:'Niles',peace:'Peace Blvd',montessori:'Montessori'};
-    let html='';
-    for(let i=0;i<dirs.length;i++){
-      const d=dirs[i];
-      html+=`<div class="roster-row">
-        <div>
-          <div class="name">${esc(d.name)}</div>
-          <div class="detail">${roleLabels[d.role]||d.role} ${d.center?'— '+(centerLabels[d.center]||d.center):'— All locations'}</div>
-        </div>
-        <div class="actions">
-          <button class="btn btn-sm btn-outline" onclick="editDirectorByIdx(${i})">Edit</button>
-          <button class="btn btn-sm btn-danger" onclick="removeDirectorByIdx(${i})">Remove</button>
-        </div>
-      </div>`;
-    }
-    document.getElementById('directorsList').innerHTML=html||'<p style="color:var(--muted);text-align:center">No directors set up yet. Add yourself first!</p>';
-  }catch(e){}
-}
+  try{const dirs=await api('/api/directors');_directorsCache=dirs;const roleLabels={owner:'Owner',admin:'Admin',hr:'HR',director:'Director'};const centerLabels={niles:'Niles',peace:'Peace Blvd',montessori:'Montessori'};
+  let html='';for(let i=0;i<dirs.length;i++){const d=dirs[i];html+=`<div class="roster-row"><div><div class="name">${esc(d.name)}</div><div class="detail">${roleLabels[d.role]||d.role} ${d.center?'— '+(centerLabels[d.center]||d.center):'— All locations'}</div></div><div class="actions"><button class="btn btn-sm btn-outline" onclick="editDirectorByIdx(${i})">Edit</button><button class="btn btn-sm btn-danger" onclick="removeDirectorByIdx(${i})">Remove</button></div></div>`;}
+  document.getElementById('directorsList').innerHTML=html||'<p style="color:var(--muted);text-align:center">No directors set up yet.</p>';}catch(e){}}
 
-function showAddDirector(){
-  document.getElementById('addDirTitle').textContent='Add director';
-  document.getElementById('editDirId').value='';
-  document.getElementById('newDirName').value='';
-  document.getElementById('newDirPin').value='';
-  document.getElementById('newDirRole').value='director';
-  document.getElementById('newDirCenter').value='';
-  document.getElementById('addDirectorForm').style.display='block';
-  dirRoleChanged();
-  loadStaffLinkOptions();
-}
-
-// Safe edit using cached data
-function editDirectorByIdx(idx){
-  const d=_directorsCache[idx];
-  if(!d)return;
-  document.getElementById('addDirTitle').textContent='Edit '+d.name;
-  document.getElementById('editDirId').value=d.id;
-  document.getElementById('newDirName').value=d.name;
-  document.getElementById('newDirPin').value=d.pin;
-  document.getElementById('newDirRole').value=d.role;
-  document.getElementById('newDirCenter').value=d.center||'';
-  document.getElementById('addDirectorForm').style.display='block';
-  dirRoleChanged();
-  loadStaffLinkOptions(d.also_staff_id);
-}
-
-// Safe remove using cached data
-async function removeDirectorByIdx(idx){
-  const d=_directorsCache[idx];
-  if(!d)return;
-  if(!confirm(`Remove ${d.name}'s director access?`))return;
-  try{
-    await api(`/api/directors/${d.id}`,{method:'DELETE'});
-    loadDirectors();showToast(d.name+' removed','ok');
-  }catch(e){showToast('Error','err');}
-}
-
+function showAddDirector(){document.getElementById('addDirTitle').textContent='Add director';document.getElementById('editDirId').value='';document.getElementById('newDirName').value='';document.getElementById('newDirPin').value='';document.getElementById('newDirRole').value='director';document.getElementById('newDirCenter').value='';document.getElementById('addDirectorForm').style.display='block';dirRoleChanged();loadStaffLinkOptions();}
+function editDirectorByIdx(idx){const d=_directorsCache[idx];if(!d)return;document.getElementById('addDirTitle').textContent='Edit '+d.name;document.getElementById('editDirId').value=d.id;document.getElementById('newDirName').value=d.name;document.getElementById('newDirPin').value=d.pin;document.getElementById('newDirRole').value=d.role;document.getElementById('newDirCenter').value=d.center||'';document.getElementById('addDirectorForm').style.display='block';dirRoleChanged();loadStaffLinkOptions(d.also_staff_id);}
+async function removeDirectorByIdx(idx){const d=_directorsCache[idx];if(!d)return;if(!confirm(`Remove ${d.name}'s director access?`))return;try{await api(`/api/directors/${d.id}`,{method:'DELETE'});loadDirectors();showToast(d.name+' removed','ok');}catch(e){showToast('Error','err');}}
 function hideAddDirector(){document.getElementById('addDirectorForm').style.display='none';}
-
-function dirRoleChanged(){
-  const role=document.getElementById('newDirRole').value;
-  document.getElementById('dirCenterField').style.display=(role==='director')?'block':'none';
-  document.getElementById('dirStaffLinkField').style.display=(role==='admin')?'block':'none';
-}
-
-async function loadStaffLinkOptions(selectedId){
-  try{
-    const staff=await api('/api/all-staff');
-    const sel=document.getElementById('newDirStaffLink');
-    sel.innerHTML='<option value="">None</option>'+staff.map(s=>
-      `<option value="${s.id}" ${s.id==selectedId?'selected':''}>${esc(s.name)} (${s.center})</option>`
-    ).join('');
-  }catch(e){}
-}
+function dirRoleChanged(){const role=document.getElementById('newDirRole').value;document.getElementById('dirCenterField').style.display=(role==='director')?'block':'none';document.getElementById('dirStaffLinkField').style.display=(role==='admin')?'block':'none';}
+async function loadStaffLinkOptions(selectedId){try{const staff=await api('/api/all-staff');const sel=document.getElementById('newDirStaffLink');sel.innerHTML='<option value="">None</option>'+staff.map(s=>`<option value="${s.id}" ${s.id==selectedId?'selected':''}>${esc(s.name)} (${s.center})</option>`).join('');}catch(e){}}
 
 async function saveDirector(){
-  const id=document.getElementById('editDirId').value;
-  const name=document.getElementById('newDirName').value.trim();
-  const pin=document.getElementById('newDirPin').value.trim();
-  const role=document.getElementById('newDirRole').value;
-  const center=role==='director'?document.getElementById('newDirCenter').value:null;
-  const also_staff_id=role==='admin'?parseInt(document.getElementById('newDirStaffLink').value)||null:null;
-  const can_view_all=role!=='director';
-  const can_manage=true;
-
-  if(!name||!pin){showToast('Name and PIN required','err');return;}
-  if(role==='director'&&!center){showToast('Select a center for program directors','err');return;}
-
-  try{
-    if(id){
-      await api(`/api/directors/${id}`,{method:'PUT',body:{name,pin,role,center,can_manage,can_view_all,also_staff_id}});
-    }else{
-      await api('/api/directors',{method:'POST',body:{name,pin,role,center,can_manage,can_view_all,also_staff_id}});
-    }
-    hideAddDirector();loadDirectors();showToast(id?'Updated!':'Added!','ok');
-  }catch(e){showToast('Error: '+e.message,'err');}
+  const id=document.getElementById('editDirId').value;const name=document.getElementById('newDirName').value.trim();const pin=document.getElementById('newDirPin').value.trim();const role=document.getElementById('newDirRole').value;const center=role==='director'?document.getElementById('newDirCenter').value:null;const also_staff_id=role==='admin'?parseInt(document.getElementById('newDirStaffLink').value)||null:null;const can_view_all=role!=='director';const can_manage=true;
+  if(!name||!pin){showToast('Name and PIN required','err');return;}if(role==='director'&&!center){showToast('Select a center for program directors','err');return;}
+  try{if(id){await api(`/api/directors/${id}`,{method:'PUT',body:{name,pin,role,center,can_manage,can_view_all,also_staff_id}});}else{await api('/api/directors',{method:'POST',body:{name,pin,role,center,can_manage,can_view_all,also_staff_id}});}hideAddDirector();loadDirectors();showToast(id?'Updated!':'Added!','ok');}catch(e){showToast('Error: '+e.message,'err');}
 }
 
-// ── HELPERS ──
-function showScreen(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function fyYear(mk){return ['oct','nov','dec'].includes(mk)?activeFY.start_year:activeFY.end_year;}
+function monthNum(mk){const map={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};return map[mk];}
+function getDaysInMonth(mk,year){return new Date(year,monthNum(mk)+1,0).getDate();}
+function esc(str){if(!str)return '';return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+async function api(url,opts={}){const o={headers:{'Content-Type':'application/json'},...opts};if(o.body&&typeof o.body==='object'&&!(o.body instanceof FormData))o.body=JSON.stringify(o.body);const res=await fetch(url,o);if(!res.ok){const e=await res.json().catch(()=>({error:'Request failed'}));throw new Error(e.error||'Error');}return res.json();}
+function showToast(msg,type){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+(type||'');setTimeout(()=>t.classList.remove('show'),2500);}
 
-function fyYear(mk){
-  return ['oct','nov','dec'].includes(mk)?activeFY.start_year:activeFY.end_year;
-}
-
-function monthNum(mk){
-  const map={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
-  return map[mk];
-}
-
-function getDaysInMonth(mk,year){
-  return new Date(year,monthNum(mk)+1,0).getDate();
-}
-
-// HTML-escape helper to prevent XSS and broken attributes
-function esc(str){
-  if(!str)return '';
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
-
-async function api(url,opts={}){
-  const o={headers:{'Content-Type':'application/json'},...opts};
-  if(o.body&&typeof o.body==='object'&&!(o.body instanceof FormData))o.body=JSON.stringify(o.body);
-  const res=await fetch(url,o);
-  if(!res.ok){const e=await res.json().catch(()=>({error:'Request failed'}));throw new Error(e.error||'Error');}
-  return res.json();
-}
-
-function showToast(msg,type){
-  const t=document.getElementById('toast');
-  t.textContent=msg;t.className='toast show '+(type||'');
-  setTimeout(()=>t.classList.remove('show'),2500);
-}
+// ── HUB SSO AUTO-LOGIN ──
+// When opened from TCC Hub, the server injects a script that fetches /api/hub-sso
+// and dispatches 'hub-sso-ready' with the director data. This auto-logins the
+// director, skipping the PIN screen entirely.
+window.addEventListener('hub-sso-ready', function(e) {
+  var d = e.detail;
+  if (!d || !d.ok || !d.director) return;
+  var dir = d.director;
+  currentDirector = dir;
+  currentRole = dir.role;
+  document.getElementById('dirGreeting').textContent = 'Hello, ' + dir.name.split(' ')[0] + '!';
+  var roleLabels = {owner:'Owner \u2014 All locations', admin:'Admin \u2014 All locations', hr:'HR \u2014 All locations', director:'Program Director'};
+  var roleText = roleLabels[dir.role] || dir.role;
+  if (dir.role === 'director' && dir.center) {
+    var cl = {niles:'Niles', peace:'Peace Boulevard', montessori:'Montessori'};
+    roleText += ' \u2014 ' + (cl[dir.center] || dir.center);
+  }
+  document.getElementById('dirRole').textContent = roleText;
+  document.getElementById('dirMgmtTab').style.display = (dir.role === 'owner') ? 'block' : 'none';
+  if (dir.can_view_all || dir.role === 'owner' || dir.role === 'admin' || dir.role === 'hr') {
+    dirCenter = 'all';
+    document.getElementById('dirCenterTabs').innerHTML =
+      '<div class="pill-tab active" onclick="dirCenterFilter(\'all\')">All</div>' +
+      '<div class="pill-tab" onclick="dirCenterFilter(\'niles\')">Niles</div>' +
+      '<div class="pill-tab" onclick="dirCenterFilter(\'peace\')">Peace</div>';
+  } else {
+    dirCenter = dir.center;
+    var cl2 = {niles:'Niles', peace:'Peace Boulevard', montessori:'Montessori'};
+    document.getElementById('dirCenterTabs').innerHTML =
+      '<div class="pill-tab active">' + esc(cl2[dir.center] || dir.center) + '</div>';
+  }
+  if (dir.role === 'admin' && dir.also_staff_id) {
+    currentUser = {staff_id: dir.also_staff_id, name: dir.name, center: 'both', role: 'admin'};
+  }
+  initDirMonth();
+  showScreen('dirScreen');
+  loadMonthlyStatus(); loadRoster();
+  if (dir.role === 'owner') loadDirectors();
+  console.log('Hub SSO: auto-logged in as director', dir.name);
+});
 
 init();
 </script>
