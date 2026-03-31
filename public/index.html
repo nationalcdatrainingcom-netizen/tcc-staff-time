@@ -75,7 +75,7 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bot
 
 <div class="header" id="appHeader">
   <h1>TCC CACFP Time Entry</h1>
-  <div class="sub">The Children's Center <span style="opacity:.4;font-size:10px">v3.31</span></div>
+  <div class="sub">The Children's Center <span style="opacity:.4;font-size:10px">v3.31b</span></div>
 </div>
 
 <!-- LOGIN SCREEN -->
@@ -176,9 +176,9 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bot
   </div>
 
   <div class="pill-tabs" id="dirMainTabs">
-    <div class="pill-tab active" onclick="dirTab('status')">Monthly Status</div>
-    <div class="pill-tab" onclick="dirTab('roster')">Manage Staff</div>
-    <div class="pill-tab" id="dirMgmtTab" style="display:none" onclick="dirTab('directors')">Directors</div>
+    <div class="pill-tab active" data-tab="status" onclick="dirTab('status')">Monthly Status</div>
+    <div class="pill-tab" data-tab="roster" onclick="dirTab('roster')">Manage Staff</div>
+    <div class="pill-tab" id="dirMgmtTab" data-tab="directors" style="display:none" onclick="dirTab('directors')">Directors</div>
   </div>
 
   <!-- Monthly Status Tab -->
@@ -770,11 +770,12 @@ function dirChangeMonth(dir){
 
 function dirTab(tab){
   document.querySelectorAll('#dirMainTabs .pill-tab').forEach(t=>{
-    t.classList.toggle('active',t.textContent.toLowerCase().includes(tab.substring(0,4)));
+    t.classList.toggle('active', t.getAttribute('data-tab') === tab);
   });
   document.getElementById('dirStatusTab').style.display=tab==='status'?'block':'none';
   document.getElementById('dirRosterTab').style.display=tab==='roster'?'block':'none';
   document.getElementById('dirDirectorsTab').style.display=tab==='directors'?'block':'none';
+  if(tab==='roster')loadRoster();
   if(tab==='directors')loadDirectors();
 }
 
