@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>TCC CACFP Time Entry</title>
 <style>
@@ -303,6 +303,11 @@ let dailyEntries=[],signatureData=null;
 
 let fiscalYears=[];
 
+// Store staff/director data for safe onclick references (avoids apostrophe-in-name bugs)
+let _rosterCache=[];
+let _dirStatusCache=[];
+let _directorsCache=[];
+
 // ── INIT ──
 async function init(){
   try{
@@ -340,8 +345,8 @@ async function loadStaffList(){
     sel.innerHTML='<option value="">— Select your name —</option>';
     const niles=staff.filter(s=>s.center==='niles');
     const peace=staff.filter(s=>s.center==='peace');
-    if(niles.length){sel.innerHTML+=`<optgroup label="Niles">${niles.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}</optgroup>`;}
-    if(peace.length){sel.innerHTML+=`<optgroup label="Peace Boulevard">${peace.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}</optgroup>`;}
+    if(niles.length){sel.innerHTML+=`<optgroup label="Niles">${niles.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</optgroup>`;}
+    if(peace.length){sel.innerHTML+=`<optgroup label="Peace Boulevard">${peace.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</optgroup>`;}
     if(!staff.length)sel.innerHTML='<option value="">No staff set up yet</option>';
   }catch(e){}
 }
@@ -349,7 +354,7 @@ async function loadStaffList(){
 // ── AUTH ──
 async function staffLogin(){
   const id=document.getElementById('loginStaffSelect').value;
-  const pin=document.getElementById('loginPin').value;
+  const pin=document.getElementById('loginPin').value.trim();
   if(!id||!pin){showToast('Select your name and enter PIN','err');return;}
   try{
     const res=await api('/api/staff-login',{method:'POST',body:{staff_id:parseInt(id),pin}});
@@ -363,7 +368,7 @@ async function staffLogin(){
 }
 
 async function directorLogin(){
-  const pin=document.getElementById('dirPin').value;
+  const pin=document.getElementById('dirPin').value.trim();
   if(!pin){showToast('Enter PIN','err');return;}
   try{
     const res=await api('/api/director-login',{method:'POST',body:{pin}});
@@ -391,7 +396,7 @@ async function directorLogin(){
       dirCenter=res.center;
       const cl={niles:'Niles',peace:'Peace Boulevard',montessori:'Montessori'};
       document.getElementById('dirCenterTabs').innerHTML=`
-        <div class="pill-tab active">${cl[res.center]||res.center}</div>`;
+        <div class="pill-tab active">${esc(cl[res.center]||res.center)}</div>`;
     }
 
     // If admin with linked staff, also allow time entry
@@ -632,14 +637,14 @@ function renderSignature(){
     const sigNote=signatureData?.admin_note||'';
 
     let sigHtml=`<div style="padding:12px;background:#fff3e0;border:1px solid #ffcc80;border-radius:10px;margin-top:12px">
-      <div style="text-align:center;font-size:13px;font-weight:600;color:#e65100;margin-bottom:8px">⚙️ Admin Override Mode — ${currentUser.name}</div>`;
+      <div style="text-align:center;font-size:13px;font-weight:600;color:#e65100;margin-bottom:8px">⚙️ Admin Override Mode — ${esc(currentUser.name)}</div>`;
 
     if(hasSig){
       sigHtml+=`<div style="padding:10px;background:#e8f5e9;border-radius:8px;margin-bottom:8px">
         <div style="font-size:12px;font-weight:600;color:var(--success)">${isApproved?'✅ Approved':'📝 Signed & Submitted'}</div>
-        <div style="font-size:12px;margin-top:2px"><strong>Signed by:</strong> ${signatureData.employee_signature}</div>
+        <div style="font-size:12px;margin-top:2px"><strong>Signed by:</strong> ${esc(signatureData.employee_signature)}</div>
         <div style="font-size:11px;color:var(--muted)">${new Date(signatureData.employee_signed_at).toLocaleDateString()}</div>
-        ${sigNote?`<div style="font-size:11px;color:#e65100;margin-top:4px;font-style:italic">${sigNote}</div>`:''}
+        ${sigNote?`<div style="font-size:11px;color:#e65100;margin-top:4px;font-style:italic">${esc(sigNote)}</div>`:''}
       </div>
       <div style="display:flex;gap:8px;justify-content:center">
         <button class="btn btn-sm btn-outline" onclick="adminUnsign()">✏️ Unsign & Re-enter</button>
@@ -652,7 +657,7 @@ function renderSignature(){
         <input type="text" id="adminSigInput" placeholder="e.g., Mary Wardlaw" style="padding:10px;font-size:16px;text-align:center">
       </div>
       <div style="padding:8px;background:#f5f5f5;border-radius:6px;margin-bottom:8px;font-size:11px;color:#555">
-        <strong>Certification:</strong> I certify that the hours entered above were accurately transferred from the physical Time & Attendance form on file for ${currentUser.name}, ${ML[staffMonth]} ${fyYear(staffMonth)}.
+        <strong>Certification:</strong> I certify that the hours entered above were accurately transferred from the physical Time & Attendance form on file for ${esc(currentUser.name)}, ${ML[staffMonth]} ${fyYear(staffMonth)}.
       </div>
       <div style="display:flex;gap:8px;justify-content:center">
         <button class="btn btn-navy" onclick="adminSign()">✍️ Sign & Submit</button>
@@ -675,7 +680,7 @@ function renderSignature(){
     document.getElementById('sigSection').innerHTML=`
       <div class="sig-box signed">
         <div style="font-size:13px;color:var(--success);font-weight:600">Signed and submitted</div>
-        <div class="sig-name">${signatureData.employee_signature}</div>
+        <div class="sig-name">${esc(signatureData.employee_signature)}</div>
         <div style="font-size:12px;color:var(--muted);margin-top:4px">${new Date(signatureData.employee_signed_at).toLocaleDateString()}</div>
       </div>
       ${isApproved?
@@ -692,7 +697,7 @@ function renderSignature(){
         <div style="font-size:13px;color:var(--muted);margin-bottom:8px">When your hours are complete for this month, sign below:</div>
         <div class="field-group" style="text-align:left;margin:12px 0">
           <label>Type your full name as digital signature</label>
-          <input type="text" id="sigNameInput" placeholder="${currentUser.name}" style="font-size:16px;font-style:italic">
+          <input type="text" id="sigNameInput" placeholder="${esc(currentUser.name)}" style="font-size:16px;font-style:italic">
         </div>
         <button class="btn btn-success" onclick="submitSignature()">Sign and Submit ${ML[staffMonth]} Hours</button>
       </div>`;
@@ -789,6 +794,7 @@ async function loadMonthlyStatus(){
     const yr=fyYear(dirMonth);
     document.getElementById('dirMonthLabel').textContent=ML[dirMonth]+' '+yr;
     let staff=data.staff||[];
+    _dirStatusCache=staff;
 
     const submitted=staff.filter(s=>s.status==='submitted').length;
     const total=staff.length;
@@ -810,19 +816,20 @@ async function loadMonthlyStatus(){
 
     if(!staff.length){html+='<p style="color:var(--muted);text-align:center;padding:20px">No staff found</p>';}
     else{
-      for(const s of staff){
+      for(let i=0;i<staff.length;i++){
+        const s=staff[i];
         const status=s.status||'none';
         const statusLabel=status==='submitted'?'Submitted':s.days_entered>0?'In progress':'Not started';
         const statusClass=status==='submitted'?'submitted':s.days_entered>0?'in_progress':'none';
         const centerLabel=s.center==='niles'?'Niles':'Peace';
         html+=`<div class="staff-status-row">
           <div class="info">
-            <div class="name">${s.name}</div>
+            <div class="name">${esc(s.name)}</div>
             <div class="meta"><span class="center-badge">${centerLabel}</span> ${s.days_entered} days entered, ${parseFloat(s.total_fs).toFixed(1)} FS hrs</div>
           </div>
           <div style="display:flex;align-items:center;gap:6px">
             <span class="status-badge ${statusClass}">${statusLabel}</span>
-            ${status==='submitted'||s.days_entered>0?`<button class="btn btn-sm btn-outline" style="font-size:.7rem;padding:4px 8px" onclick="dirReopenMonth(${s.id},'${s.name.replace(/'/g,"\\'")}')">Reopen</button>`:''}
+            ${status==='submitted'||s.days_entered>0?`<button class="btn btn-sm btn-outline" style="font-size:.7rem;padding:4px 8px" onclick="dirReopenMonth(${i})">Reopen</button>`:''}
           </div>
         </div>`;
       }
@@ -831,17 +838,20 @@ async function loadMonthlyStatus(){
   }catch(e){document.getElementById('dirStatusList').innerHTML='<p style="color:var(--error)">Error loading data</p>';}
 }
 
-// ── ROSTER MANAGEMENT ──
-
-async function dirReopenMonth(staffId,name){
-  if(!confirm(`Reopen ${name}'s ${ML[dirMonth]} time entry? Their signature will be removed and they can edit their hours.`))return;
+// Safe reopen using cached data (no apostrophe issues)
+async function dirReopenMonth(idx){
+  const s=_dirStatusCache[idx];
+  if(!s)return;
+  if(!confirm(`Reopen ${s.name}'s ${ML[dirMonth]} time entry? Their signature will be removed and they can edit their hours.`))return;
   try{
     const fyRes=await api('/api/fiscal-year');
-    await api('/api/reopen-month',{method:'POST',body:{staff_id:staffId,fiscal_year_id:fyRes.id,month_key:dirMonth}});
-    showToast(`${name}'s ${ML[dirMonth]} reopened`,'ok');
+    await api('/api/reopen-month',{method:'POST',body:{staff_id:s.id,fiscal_year_id:fyRes.id,month_key:dirMonth}});
+    showToast(`${s.name}'s ${ML[dirMonth]} reopened`,'ok');
     loadMonthlyStatus();
   }catch(e){showToast('Error: '+e.message,'err');}
 }
+
+// ── ROSTER MANAGEMENT ──
 function canSeeWages(){return currentDirector&&(currentDirector.role==='owner'||currentDirector.role==='admin');}
 function canEnterWages(){return currentDirector&&(currentDirector.role==='owner'||currentDirector.role==='admin'||currentDirector.role==='hr');}
 
@@ -849,20 +859,22 @@ async function loadRoster(){
   try{
     const centerParam=dirCenter!=='all'?`?center=${dirCenter}`:'';
     const staff=await api('/api/manage/staff'+centerParam);
+    _rosterCache=staff;
     const showWage=canSeeWages();
     let html='';
-    for(const s of staff){
+    for(let i=0;i<staff.length;i++){
+      const s=staff[i];
       const centerLabel=s.center==='niles'?'Niles':'Peace';
       const hasPin=!!s.pin;
       const wageText=showWage?` $${parseFloat(s.hourly_rate||0).toFixed(2)}/hr`:'';
       html+=`<div class="roster-row">
         <div>
-          <div class="name">${s.name}</div>
+          <div class="name">${esc(s.name)}</div>
           <div class="detail"><span class="center-badge">${centerLabel}</span>${wageText} ${hasPin?'<span style="color:var(--success)">PIN set</span>':'<span style="color:var(--error)">No PIN</span>'} ${s.role==='admin'?'<span style="color:var(--info)">(Admin)</span>':''}</div>
         </div>
         <div class="actions">
-          <button class="btn btn-sm btn-outline" onclick="editStaff(${s.id},'${s.name.replace("'","\\'")}','${s.center}',${s.hourly_rate||0},'${s.pin||''}','${s.role||'staff'}')">Edit</button>
-          <button class="btn btn-sm btn-danger" onclick="removeStaff(${s.id},'${s.name.replace("'","\\'")}')">Remove</button>
+          <button class="btn btn-sm btn-outline" onclick="editStaffByIdx(${i})">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="removeStaffByIdx(${i})">Remove</button>
         </div>
       </div>`;
     }
@@ -882,18 +894,31 @@ function showAddStaff(){
   document.getElementById('rateFieldGroup').style.display=canEnterWages()?'block':'none';
 }
 
-function editStaff(id,name,center,rate,pin,role){
-  document.getElementById('addStaffTitle').textContent='Edit '+name;
-  document.getElementById('editStaffId').value=id;
-  document.getElementById('newStaffName').value=name;
-  document.getElementById('newStaffCenter').value=center;
-  document.getElementById('newStaffRate').value=canSeeWages()?rate:'';
-  document.getElementById('newStaffPin').value=pin;
-  document.getElementById('newStaffRole').value=role;
+// Safe edit using cached data (no apostrophe issues)
+function editStaffByIdx(idx){
+  const s=_rosterCache[idx];
+  if(!s)return;
+  document.getElementById('addStaffTitle').textContent='Edit '+s.name;
+  document.getElementById('editStaffId').value=s.id;
+  document.getElementById('newStaffName').value=s.name;
+  document.getElementById('newStaffCenter').value=s.center;
+  document.getElementById('newStaffRate').value=canSeeWages()?(s.hourly_rate||''):'';
+  document.getElementById('newStaffPin').value=s.pin||'';
+  document.getElementById('newStaffRole').value=s.role||'staff';
   document.getElementById('addStaffForm').style.display='block';
-  // Show/hide wage field: owner/admin see and edit, HR sees on add only (blank on edit), directors never
   document.getElementById('rateFieldGroup').style.display=canEnterWages()?'block':'none';
   if(!canSeeWages())document.getElementById('newStaffRate').value='';
+}
+
+// Safe remove using cached data
+async function removeStaffByIdx(idx){
+  const s=_rosterCache[idx];
+  if(!s)return;
+  if(!confirm(`Remove ${s.name}? They will no longer be able to log in.`))return;
+  try{
+    await api(`/api/manage/staff/${s.id}/deactivate`,{method:'PUT'});
+    loadRoster();loadStaffList();showToast(s.name+' removed','ok');
+  }catch(e){showToast('Error','err');}
 }
 
 function hideAddStaff(){document.getElementById('addStaffForm').style.display='none';}
@@ -925,30 +950,24 @@ async function saveStaff(){
   }catch(e){showToast('Error: '+e.message,'err');}
 }
 
-async function removeStaff(id,name){
-  if(!confirm(`Remove ${name}? They will no longer be able to log in.`))return;
-  try{
-    await api(`/api/manage/staff/${id}/deactivate`,{method:'PUT'});
-    loadRoster();loadStaffList();showToast(name+' removed','ok');
-  }catch(e){showToast('Error','err');}
-}
-
 // ── DIRECTOR MANAGEMENT (owner only) ──
 async function loadDirectors(){
   try{
     const dirs=await api('/api/directors');
+    _directorsCache=dirs;
     const roleLabels={owner:'Owner',admin:'Admin',hr:'HR',director:'Director'};
     const centerLabels={niles:'Niles',peace:'Peace Blvd',montessori:'Montessori'};
     let html='';
-    for(const d of dirs){
+    for(let i=0;i<dirs.length;i++){
+      const d=dirs[i];
       html+=`<div class="roster-row">
         <div>
-          <div class="name">${d.name}</div>
+          <div class="name">${esc(d.name)}</div>
           <div class="detail">${roleLabels[d.role]||d.role} ${d.center?'— '+(centerLabels[d.center]||d.center):'— All locations'}</div>
         </div>
         <div class="actions">
-          <button class="btn btn-sm btn-outline" onclick='editDirector(${JSON.stringify(d)})'>Edit</button>
-          <button class="btn btn-sm btn-danger" onclick="removeDirector(${d.id},'${d.name.replace(/'/g,"\\'")}')">Remove</button>
+          <button class="btn btn-sm btn-outline" onclick="editDirectorByIdx(${i})">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="removeDirectorByIdx(${i})">Remove</button>
         </div>
       </div>`;
     }
@@ -968,7 +987,10 @@ function showAddDirector(){
   loadStaffLinkOptions();
 }
 
-function editDirector(d){
+// Safe edit using cached data
+function editDirectorByIdx(idx){
+  const d=_directorsCache[idx];
+  if(!d)return;
   document.getElementById('addDirTitle').textContent='Edit '+d.name;
   document.getElementById('editDirId').value=d.id;
   document.getElementById('newDirName').value=d.name;
@@ -978,6 +1000,17 @@ function editDirector(d){
   document.getElementById('addDirectorForm').style.display='block';
   dirRoleChanged();
   loadStaffLinkOptions(d.also_staff_id);
+}
+
+// Safe remove using cached data
+async function removeDirectorByIdx(idx){
+  const d=_directorsCache[idx];
+  if(!d)return;
+  if(!confirm(`Remove ${d.name}'s director access?`))return;
+  try{
+    await api(`/api/directors/${d.id}`,{method:'DELETE'});
+    loadDirectors();showToast(d.name+' removed','ok');
+  }catch(e){showToast('Error','err');}
 }
 
 function hideAddDirector(){document.getElementById('addDirectorForm').style.display='none';}
@@ -993,7 +1026,7 @@ async function loadStaffLinkOptions(selectedId){
     const staff=await api('/api/all-staff');
     const sel=document.getElementById('newDirStaffLink');
     sel.innerHTML='<option value="">None</option>'+staff.map(s=>
-      `<option value="${s.id}" ${s.id==selectedId?'selected':''}>${s.name} (${s.center})</option>`
+      `<option value="${s.id}" ${s.id==selectedId?'selected':''}>${esc(s.name)} (${s.center})</option>`
     ).join('');
   }catch(e){}
 }
@@ -1021,14 +1054,6 @@ async function saveDirector(){
   }catch(e){showToast('Error: '+e.message,'err');}
 }
 
-async function removeDirector(id,name){
-  if(!confirm(`Remove ${name}'s director access?`))return;
-  try{
-    await api(`/api/directors/${id}`,{method:'DELETE'});
-    loadDirectors();showToast(name+' removed','ok');
-  }catch(e){showToast('Error','err');}
-}
-
 // ── HELPERS ──
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -1046,6 +1071,12 @@ function monthNum(mk){
 
 function getDaysInMonth(mk,year){
   return new Date(year,monthNum(mk)+1,0).getDate();
+}
+
+// HTML-escape helper to prevent XSS and broken attributes
+function esc(str){
+  if(!str)return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 async function api(url,opts={}){
