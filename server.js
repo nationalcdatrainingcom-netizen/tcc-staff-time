@@ -4,7 +4,7 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const BUILD_VERSION = '2026-03-31a';
+const BUILD_VERSION = '2026-03-31c';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -357,14 +357,15 @@ app.post('/api/clear-month', async (req, res) => {
 // ── MANAGEMENT ──
 app.get('/api/manage/staff', async (req, res) => {
   try {
-    const { center } = req.query;
+    const { center, include_inactive } = req.query;
     let q = `SELECT s.id, s.name, s.center, s.hourly_rate, s.is_active,
               sp.pin, sp.role
        FROM staff s LEFT JOIN staff_pins sp ON sp.staff_id = s.id
-       WHERE s.is_active = true`;
+       WHERE 1=1`;
     const params = [];
+    if (!include_inactive) { q += ' AND s.is_active = true'; }
     if (center) { params.push(center); q += ` AND s.center=$${params.length}`; }
-    q += ' ORDER BY s.center, s.name';
+    q += ' ORDER BY s.is_active DESC, s.center, s.name';
     const { rows } = await pool.query(q, params);
     res.json(rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -409,6 +410,13 @@ app.put('/api/manage/staff/:id/rate', async (req, res) => {
 app.put('/api/manage/staff/:id/deactivate', async (req, res) => {
   try {
     await pool.query('UPDATE staff SET is_active=false, updated_at=NOW() WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/manage/staff/:id/reactivate', async (req, res) => {
+  try {
+    await pool.query('UPDATE staff SET is_active=true, updated_at=NOW() WHERE id=$1', [req.params.id]);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
