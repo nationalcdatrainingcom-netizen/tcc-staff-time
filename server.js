@@ -1,10 +1,13 @@
 const express = require('express');
 const { Pool } = require('pg');
 const path = require('path');
+const fs = require('fs');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const BUILD_VERSION = '2026-03-31c';
+const BUILD_VERSION = '2026-03-31d-sso';
+const HUB_JWT_SECRET = process.env.HUB_JWT_SECRET || '';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -12,7 +15,6 @@ const pool = new Pool({
 });
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
 
 // Suppress favicon 404
 app.get('/favicon.ico', (req, res) => res.status(204).end());
@@ -91,6 +93,60 @@ function monthKeyFromDate() {
   const months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
   return months[new Date().getMonth()];
 }
+
+// ══════════════════════════════════════════════════════════════
+// HUB SSO — Auto-login directors via JWT token from TCC Hub
+// ══════════════════════════════════════════════════════════════
+app.get('/api/hub-sso', async (req, res) => {
+  const token = req.query.token;
+  if (!token || !HUB_JWT_SECRET) return res.status(401).json({ error: 'No token' });
+  try {
+    const decoded = jwt.verify(token, HUB_JWT_SECRET);
+    const hubUsername = decoded.username.toLowerCase();
+    const hubRole = decoded.role;
+    const hubCenter = decoded.center; // 'peace', 'niles', 'montessori', or 'all'
+
+    // Find a matching director by name or role
+    const { rows: dirs } = await pool.query(
+      'SELECT * FROM directors WHERE is_active = true ORDER BY name'
+    );
+
+    let director = null;
+
+    // Try matching by username (Hub username → director name match)
+    director = dirs.find(d => d.name.toLowerCase().includes(hubUsername));
+
+    // If not found and Hub says owner, use the first owner director
+    if (!director && (hubRole === 'owner' || hubRole === 'admin')) {
+      director = dirs.find(d => d.role === 'owner') || dirs.find(d => d.role === 'admin');
+    }
+
+    // If still not found, try matching by center for directors
+    if (!director && hubCenter && hubCenter !== 'all') {
+      director = dirs.find(d => d.center === hubCenter && d.role === 'director');
+    }
+
+    if (director) {
+      return res.json({
+        ok: true,
+        loginType: 'director',
+        director: {
+          director_id: director.id,
+          name: director.name,
+          role: director.role,
+          center: director.center,
+          can_manage: director.can_manage,
+          can_view_all: director.can_view_all,
+          also_staff_id: director.also_staff_id
+        }
+      });
+    }
+
+    res.status(401).json({ error: 'No matching director found' });
+  } catch (e) {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+});
 
 // ── AUTH ──
 const ADMIN_OVERRIDE_PIN = process.env.ADMIN_OVERRIDE_PIN || '9999';
@@ -188,7 +244,6 @@ app.get('/api/debug/pins', async (req, res) => {
        FROM staff s LEFT JOIN staff_pins sp ON sp.staff_id = s.id
        WHERE s.is_active = true ORDER BY s.name`
     );
-    // Mask PINs for safety — show first char + length
     const safe = rows.map(r => ({
       id: r.id, name: r.name, center: r.center,
       pin_preview: r.pin ? r.pin[0] + '***' : 'NO PIN',
@@ -335,17 +390,14 @@ app.post('/api/reopen-month', async (req, res) => {
 app.post('/api/clear-month', async (req, res) => {
   try {
     const { staff_id, fiscal_year_id, month_key } = req.body;
-    // Delete signature first
     await pool.query(
       'DELETE FROM monthly_signatures WHERE staff_id=$1 AND fiscal_year_id=$2 AND month_key=$3',
       [staff_id, fiscal_year_id, month_key]
     );
-    // Delete daily entries
     await pool.query(
       'DELETE FROM daily_cacfp_entries WHERE staff_id=$1 AND fiscal_year_id=$2 AND month_key=$3',
       [staff_id, fiscal_year_id, month_key]
     );
-    // Clear the rolled-up totals
     await pool.query(
       'DELETE FROM staff_time_entries WHERE staff_id=$1 AND fiscal_year_id=$2 AND month_key=$3',
       [staff_id, fiscal_year_id, month_key]
@@ -477,6 +529,39 @@ app.post('/api/bootstrap', async (req, res) => {
     );
     res.json({ ok: true, message: `Owner account created for ${name}. You can now log in.`, director: created[0] });
   } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ══════════════════════════════════════════════════════════════
+// SERVE FRONTEND (with Hub SSO injection)
+// ══════════════════════════════════════════════════════════════
+app.use(express.static(path.join(__dirname, 'public')));
+app.get('*', (req, res) => {
+  const hubToken = req.query.hub_token;
+  if (hubToken && HUB_JWT_SECRET) {
+    // Inject a script that auto-logins the director via the Hub SSO endpoint
+    const indexPath = path.join(__dirname, 'public', 'index.html');
+    let html = fs.readFileSync(indexPath, 'utf-8');
+    const patchScript = `<script>
+(function(){
+  var HUB_TOKEN=${JSON.stringify(hubToken)};
+  fetch('/api/hub-sso?token='+HUB_TOKEN)
+    .then(function(r){return r.json()})
+    .then(function(d){
+      if(d.ok && d.director){
+        // Store SSO director data for the frontend to pick up
+        window._hubSSO = d;
+        console.log('Hub SSO: director auto-login ready for', d.director.name);
+        // Dispatch event so the frontend can auto-login
+        window.dispatchEvent(new CustomEvent('hub-sso-ready', {detail: d}));
+      }
+    })
+    .catch(function(e){console.log('Hub SSO error:',e)});
+})();
+</script>`;
+    html = html.replace('</head>', patchScript + '\n</head>');
+    return res.send(html);
+  }
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // ── START ──
