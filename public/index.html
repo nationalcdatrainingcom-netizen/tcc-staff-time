@@ -69,13 +69,20 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bot
 .staff-status-row .info{flex:1}
 .staff-status-row .info .name{font-weight:500;font-size:14px}
 .staff-status-row .info .meta{font-size:12px;color:var(--muted)}
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:50;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--card);border-radius:var(--radius);padding:20px;width:100%;max-width:400px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.2);animation:modalIn .2s ease}
+@keyframes modalIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.modal-box h3{font-size:16px;font-weight:600;color:var(--navy);margin-bottom:16px}
+.inactive-row{opacity:.55}
+.inactive-badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:#ffebee;color:var(--error)}
 </style>
 </head>
 <body>
 
 <div class="header" id="appHeader">
   <h1>TCC CACFP Time Entry</h1>
-  <div class="sub">The Children's Center <span style="opacity:.4;font-size:10px">v3.31b</span></div>
+  <div class="sub">The Children's Center <span style="opacity:.4;font-size:10px">v3.31c</span></div>
 </div>
 
 <!-- LOGIN SCREEN -->
@@ -200,43 +207,14 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bot
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <h3 style="margin:0">Staff roster</h3>
-        <button class="btn btn-sm btn-navy" onclick="showAddStaff()">+ Add</button>
+        <div style="display:flex;gap:6px;align-items:center">
+          <label style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px;margin:0;cursor:pointer">
+            <input type="checkbox" id="showInactiveToggle" onchange="loadRoster()" style="width:auto;padding:0"> Removed
+          </label>
+          <button class="btn btn-sm btn-navy" onclick="showAddStaff()">+ Add</button>
+        </div>
       </div>
       <div id="rosterList">Loading...</div>
-    </div>
-
-    <!-- Add/Edit Staff Form -->
-    <div class="card" id="addStaffForm" style="display:none">
-      <h3 id="addStaffTitle">Add new staff</h3>
-      <input type="hidden" id="editStaffId">
-      <div class="field-group">
-        <label>Full name</label>
-        <input type="text" id="newStaffName" placeholder="First Last">
-      </div>
-      <div class="field-group">
-        <label>Center</label>
-        <select id="newStaffCenter">
-          <option value="niles">Niles</option>
-          <option value="peace">Peace Boulevard</option>
-        </select>
-      </div>
-      <div class="field-group" id="rateFieldGroup">
-        <label>Hourly rate ($)</label>
-        <input type="number" id="newStaffRate" step="0.01" placeholder="15.00" style="text-align:left;font-size:16px">
-      </div>
-      <div class="field-group">
-        <label>PIN (4-10 characters)</label>
-        <input type="text" id="newStaffPin" maxlength="10" placeholder="1234">
-      </div>
-      <div class="field-group">
-        <label>Role</label>
-        <select id="newStaffRole">
-          <option value="staff">Staff</option>
-          <option value="admin">Admin (sees admin hours)</option>
-        </select>
-      </div>
-      <button class="btn btn-navy" onclick="saveStaff()">Save</button>
-      <button class="btn btn-outline" onclick="hideAddStaff()">Cancel</button>
     </div>
   </div>
 
@@ -285,6 +263,42 @@ label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bot
       <button class="btn btn-navy" onclick="saveDirector()">Save</button>
       <button class="btn btn-outline" onclick="hideAddDirector()">Cancel</button>
     </div>
+  </div>
+</div>
+
+<!-- Staff Edit/Add Modal -->
+<div class="modal-overlay" id="staffModal" onclick="if(event.target===this)hideAddStaff()">
+  <div class="modal-box">
+    <h3 id="addStaffTitle">Add new staff</h3>
+    <input type="hidden" id="editStaffId">
+    <div class="field-group">
+      <label>Full name</label>
+      <input type="text" id="newStaffName" placeholder="First Last">
+    </div>
+    <div class="field-group">
+      <label>Center</label>
+      <select id="newStaffCenter">
+        <option value="niles">Niles</option>
+        <option value="peace">Peace Boulevard</option>
+      </select>
+    </div>
+    <div class="field-group" id="rateFieldGroup">
+      <label>Hourly rate ($)</label>
+      <input type="number" id="newStaffRate" step="0.01" placeholder="15.00" style="text-align:left;font-size:16px">
+    </div>
+    <div class="field-group">
+      <label>PIN (4-10 characters)</label>
+      <input type="text" id="newStaffPin" maxlength="10" placeholder="1234">
+    </div>
+    <div class="field-group">
+      <label>Role</label>
+      <select id="newStaffRole">
+        <option value="staff">Staff</option>
+        <option value="admin">Admin (sees admin hours)</option>
+      </select>
+    </div>
+    <button class="btn btn-navy" onclick="saveStaff()">Save</button>
+    <button class="btn btn-outline" onclick="hideAddStaff()">Cancel</button>
   </div>
 </div>
 
@@ -854,12 +868,15 @@ async function dirReopenMonth(idx){
 
 // ── ROSTER MANAGEMENT ──
 function canSeeWages(){return currentDirector&&(currentDirector.role==='owner'||currentDirector.role==='admin');}
-function canEnterWages(){return currentDirector&&(currentDirector.role==='owner'||currentDirector.role==='admin'||currentDirector.role==='hr');}
 
 async function loadRoster(){
   try{
-    const centerParam=dirCenter!=='all'?`?center=${dirCenter}`:'';
-    const staff=await api('/api/manage/staff'+centerParam);
+    const showInactive=document.getElementById('showInactiveToggle')?.checked;
+    const parts=[];
+    if(dirCenter!=='all')parts.push('center='+dirCenter);
+    if(showInactive)parts.push('include_inactive=1');
+    const qs=parts.length?'?'+parts.join('&'):'';
+    const staff=await api('/api/manage/staff'+qs);
     _rosterCache=staff;
     const showWage=canSeeWages();
     let html='';
@@ -868,19 +885,23 @@ async function loadRoster(){
       const centerLabel=s.center==='niles'?'Niles':'Peace';
       const hasPin=!!s.pin;
       const wageText=showWage?` $${parseFloat(s.hourly_rate||0).toFixed(2)}/hr`:'';
-      html+=`<div class="roster-row">
+      const isInactive=s.is_active===false;
+      html+=`<div class="roster-row ${isInactive?'inactive-row':''}">
         <div>
-          <div class="name">${esc(s.name)}</div>
+          <div class="name">${esc(s.name)} ${isInactive?'<span class="inactive-badge">Removed</span>':''}</div>
           <div class="detail"><span class="center-badge">${centerLabel}</span>${wageText} ${hasPin?'<span style="color:var(--success)">PIN set</span>':'<span style="color:var(--error)">No PIN</span>'} ${s.role==='admin'?'<span style="color:var(--info)">(Admin)</span>':''}</div>
         </div>
         <div class="actions">
-          <button class="btn btn-sm btn-outline" onclick="editStaffByIdx(${i})">Edit</button>
-          <button class="btn btn-sm btn-danger" onclick="removeStaffByIdx(${i})">Remove</button>
+          ${isInactive
+            ?`<button class="btn btn-sm btn-success" onclick="reactivateStaffByIdx(${i})">Restore</button>`
+            :`<button class="btn btn-sm btn-outline" onclick="editStaffByIdx(${i})">Edit</button>
+              <button class="btn btn-sm btn-danger" onclick="removeStaffByIdx(${i})">Remove</button>`
+          }
         </div>
       </div>`;
     }
     document.getElementById('rosterList').innerHTML=html||'<p style="color:var(--muted);text-align:center">No staff yet</p>';
-  }catch(e){}
+  }catch(e){console.error('loadRoster error',e);}
 }
 
 function showAddStaff(){
@@ -890,40 +911,29 @@ function showAddStaff(){
   document.getElementById('newStaffRate').value='';
   document.getElementById('newStaffPin').value='';
   document.getElementById('newStaffRole').value='staff';
-  document.getElementById('addStaffForm').style.display='block';
-  // Show/hide wage field based on role
-  document.getElementById('rateFieldGroup').style.display=canEnterWages()?'block':'none';
+  document.getElementById('newStaffName').removeAttribute('disabled');
+  document.getElementById('newStaffCenter').removeAttribute('disabled');
+  document.getElementById('rateFieldGroup').style.display=canSeeWages()?'block':'none';
+  document.getElementById('staffModal').classList.add('open');
 }
 
-// Safe edit using cached data (no apostrophe issues)
 function editStaffByIdx(idx){
-  console.log('editStaffByIdx called, idx=', idx, 'cache length=', _rosterCache.length);
   const s=_rosterCache[idx];
-  if(!s){console.error('No staff at index', idx);return;}
+  if(!s)return;
   document.getElementById('addStaffTitle').textContent='Edit '+s.name;
   document.getElementById('editStaffId').value=s.id;
   document.getElementById('newStaffName').value=s.name;
+  document.getElementById('newStaffName').setAttribute('disabled','true');
   document.getElementById('newStaffCenter').value=s.center;
+  document.getElementById('newStaffCenter').setAttribute('disabled','true');
   document.getElementById('newStaffRate').value=canSeeWages()?(s.hourly_rate||''):'';
   document.getElementById('newStaffPin').value=s.pin||'';
   document.getElementById('newStaffRole').value=s.role||'staff';
-  document.getElementById('addStaffForm').style.display='block';
-  document.getElementById('rateFieldGroup').style.display=canEnterWages()?'block':'none';
-  if(!canSeeWages())document.getElementById('newStaffRate').value='';
+  document.getElementById('rateFieldGroup').style.display=canSeeWages()?'block':'none';
+  document.getElementById('staffModal').classList.add('open');
 }
 
-// Safe remove using cached data
-async function removeStaffByIdx(idx){
-  const s=_rosterCache[idx];
-  if(!s)return;
-  if(!confirm(`Remove ${s.name}? They will no longer be able to log in.`))return;
-  try{
-    await api(`/api/manage/staff/${s.id}/deactivate`,{method:'PUT'});
-    loadRoster();loadStaffList();showToast(s.name+' removed','ok');
-  }catch(e){showToast('Error','err');}
-}
-
-function hideAddStaff(){document.getElementById('addStaffForm').style.display='none';}
+function hideAddStaff(){document.getElementById('staffModal').classList.remove('open');}
 
 async function saveStaff(){
   const id=document.getElementById('editStaffId').value;
@@ -938,18 +948,36 @@ async function saveStaff(){
 
   try{
     if(id){
-      // Update existing
       await api(`/api/manage/staff/${id}/pin`,{method:'PUT',body:{pin,role}});
-      // Only update rate if user can enter wages and actually entered a value
-      if(canEnterWages()&&rateInput!==''){
+      if(canSeeWages()&&rateInput!==''){
         await api(`/api/manage/staff/${id}/rate`,{method:'PUT',body:{hourly_rate:rate}});
       }
     }else{
-      await api('/api/manage/staff',{method:'POST',body:{name,center,hourly_rate:canEnterWages()?rate:0,pin,role}});
+      await api('/api/manage/staff',{method:'POST',body:{name,center,hourly_rate:canSeeWages()?rate:0,pin,role}});
     }
     hideAddStaff();loadRoster();loadStaffList();
     showToast(id?'Updated!':'Added!','ok');
   }catch(e){showToast('Error: '+e.message,'err');}
+}
+
+async function removeStaffByIdx(idx){
+  const s=_rosterCache[idx];
+  if(!s)return;
+  if(!confirm(`Remove ${s.name}? They will no longer be able to log in.`))return;
+  try{
+    await api(`/api/manage/staff/${s.id}/deactivate`,{method:'PUT'});
+    loadRoster();loadStaffList();showToast(s.name+' removed','ok');
+  }catch(e){showToast('Error','err');}
+}
+
+async function reactivateStaffByIdx(idx){
+  const s=_rosterCache[idx];
+  if(!s)return;
+  if(!confirm(`Restore ${s.name}? They will be able to log in again.`))return;
+  try{
+    await api(`/api/manage/staff/${s.id}/reactivate`,{method:'PUT'});
+    loadRoster();loadStaffList();showToast(s.name+' restored','ok');
+  }catch(e){showToast('Error','err');}
 }
 
 // ── DIRECTOR MANAGEMENT (owner only) ──
