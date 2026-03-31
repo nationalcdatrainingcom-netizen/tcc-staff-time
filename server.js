@@ -4,6 +4,7 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const BUILD_VERSION = '2026-03-31a';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -12,6 +13,12 @@ const pool = new Pool({
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Suppress favicon 404
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+
+// Version check — hit /api/version to confirm deploy
+app.get('/api/version', (req, res) => res.json({ version: BUILD_VERSION }));
 
 async function initDB() {
   await pool.query(`
@@ -90,7 +97,8 @@ const ADMIN_OVERRIDE_PIN = process.env.ADMIN_OVERRIDE_PIN || '9999';
 
 app.post('/api/staff-login', async (req, res) => {
   try {
-    const { staff_id, pin } = req.body;
+    const { staff_id } = req.body;
+    const pin = (req.body.pin || '').trim();
 
     // Admin override PIN — allows login as any staff member in admin mode
     if (pin === ADMIN_OVERRIDE_PIN) {
@@ -105,7 +113,7 @@ app.post('/api/staff-login', async (req, res) => {
     const { rows } = await pool.query(
       `SELECT sp.*, s.name, s.center, s.hourly_rate
        FROM staff_pins sp JOIN staff s ON s.id = sp.staff_id
-       WHERE sp.staff_id = $1 AND sp.pin = $2 AND s.is_active = true`,
+       WHERE sp.staff_id = $1 AND TRIM(sp.pin) = $2 AND s.is_active = true`,
       [staff_id, pin]
     );
     if (!rows.length) return res.status(401).json({ error: 'Invalid PIN' });
@@ -116,9 +124,9 @@ app.post('/api/staff-login', async (req, res) => {
 
 app.post('/api/director-login', async (req, res) => {
   try {
-    const { pin } = req.body;
+    const pin = (req.body.pin || '').trim();
     const { rows } = await pool.query(
-      'SELECT * FROM directors WHERE pin = $1 AND is_active = true', [pin]
+      'SELECT * FROM directors WHERE TRIM(pin) = $1 AND is_active = true', [pin]
     );
     if (!rows.length) return res.status(401).json({ error: 'Invalid PIN' });
     const d = rows[0];
@@ -146,7 +154,7 @@ app.post('/api/directors', async (req, res) => {
     const { rows } = await pool.query(
       `INSERT INTO directors (name, pin, role, center, can_manage, can_view_all, also_staff_id)
        VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [name, pin, role || 'director', center || null, can_manage !== false, can_view_all || false, also_staff_id || null]
+      [name, (pin || '').trim(), role || 'director', center || null, can_manage !== false, can_view_all || false, also_staff_id || null]
     );
     res.json(rows[0]);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -159,7 +167,7 @@ app.put('/api/directors/:id', async (req, res) => {
       `UPDATE directors SET name=COALESCE($1,name), pin=COALESCE($2,pin), role=COALESCE($3,role),
        center=$4, can_manage=COALESCE($5,can_manage), can_view_all=COALESCE($6,can_view_all),
        also_staff_id=$7 WHERE id=$8 RETURNING *`,
-      [name, pin, role, center, can_manage, can_view_all, also_staff_id || null, req.params.id]
+      [name, pin ? pin.trim() : null, role, center, can_manage, can_view_all, also_staff_id || null, req.params.id]
     );
     res.json(rows[0]);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -352,7 +360,7 @@ app.post('/api/manage/staff', async (req, res) => {
     const s = sRes.rows[0];
     await pool.query(
       'INSERT INTO staff_pins (staff_id, pin, role) VALUES ($1,$2,$3)',
-      [s.id, pin || '1234', role || 'staff']
+      [s.id, (pin || '1234').trim(), role || 'staff']
     );
     res.json(s);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -364,7 +372,7 @@ app.put('/api/manage/staff/:id/pin', async (req, res) => {
     await pool.query(
       `INSERT INTO staff_pins (staff_id, pin, role) VALUES ($1,$2,$3)
        ON CONFLICT (staff_id) DO UPDATE SET pin=$2, role=COALESCE($3, staff_pins.role), updated_at=NOW()`,
-      [req.params.id, pin, role]
+      [req.params.id, (pin || '').trim(), role]
     );
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -437,7 +445,7 @@ app.post('/api/bootstrap', async (req, res) => {
     const { rows: created } = await pool.query(
       `INSERT INTO directors (name, pin, role, center, can_manage, can_view_all)
        VALUES ($1, $2, 'owner', NULL, true, true) RETURNING *`,
-      [name, pin]
+      [name, pin.trim()]
     );
     res.json({ ok: true, message: `Owner account created for ${name}. You can now log in.`, director: created[0] });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -445,7 +453,7 @@ app.post('/api/bootstrap', async (req, res) => {
 
 // ── START ──
 initDB().then(() => {
-  app.listen(PORT, () => console.log(`📱 TCC Staff Time Entry running on port ${PORT}`));
+  app.listen(PORT, () => console.log(`📱 TCC Staff Time Entry v${BUILD_VERSION} running on port ${PORT}`));
 }).catch(err => {
   console.error('DB init error:', err);
   app.listen(PORT, () => console.log(`📱 TCC Staff Time Entry on port ${PORT} (DB init failed)`));
