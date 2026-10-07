@@ -291,16 +291,16 @@ const DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
 let currentUser=null,currentRole=null,activeFY=null,currentDirector=null,isAdminOverride=false;
 let staffMonth=null,staffMonthIdx=0;
-let dirMonth=null,dirMonthIdx=0,dirCenter='all';
+let dirMonth=null,dirMonthIdx=0,dirCenter='all',dirFY=null;
 let dailyEntries=[],signatureData=null;
-let fiscalYears=[];
+let fiscalYears=[],currentFY=null;
 let _rosterCache=[];
 let _dirStatusCache=[];
 let _directorsCache=[];
 
 async function init(){
   try{
-    activeFY=await api('/api/fiscal-year');
+    activeFY=currentFY=await api('/api/fiscal-year');
     if(!activeFY){showToast('No active fiscal year configured','err');return;}
     try{fiscalYears=await api('/api/fiscal-years');}catch(e){fiscalYears=[activeFY];}
     await loadStaffList();
@@ -387,7 +387,7 @@ async function directorLogin(){
 
 async function logout(){
   currentUser=null;currentRole=null;currentDirector=null;isAdminOverride=false;
-  try{activeFY=await api('/api/fiscal-year');}catch(e){}
+  try{activeFY=currentFY=await api('/api/fiscal-year');}catch(e){}
   document.getElementById('loginPin').value='';
   document.getElementById('dirPin').value='';
   showScreen('loginScreen');
@@ -396,13 +396,14 @@ async function logout(){
 function initStaffMonth(){
   const now=new Date();const m=now.getMonth();
   const months=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  if(currentFY)activeFY=currentFY;
   staffMonth=months[m];staffMonthIdx=MO.indexOf(staffMonth);loadStaffMonth();
 }
 
 function changeMonth(dir){
   const newIdx=staffMonthIdx+dir;
   if(newIdx>=0&&newIdx<MO.length){staffMonthIdx=newIdx;staffMonth=MO[staffMonthIdx];loadStaffMonth();}
-  else if(isAdminOverride){
+  else{
     if(newIdx<0){const prevFY=fiscalYears.find(f=>f.start_year===activeFY.start_year-1);if(prevFY){activeFY=prevFY;staffMonthIdx=MO.length-1;staffMonth=MO[staffMonthIdx];loadStaffMonth();}}
     else{const nextFY=fiscalYears.find(f=>f.start_year===activeFY.start_year+1);if(nextFY){activeFY=nextFY;staffMonthIdx=0;staffMonth=MO[staffMonthIdx];loadStaffMonth();}}
   }
@@ -547,12 +548,18 @@ async function clearMonth(){
 
 function initDirMonth(){
   const now=new Date();const months=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
-  dirMonth=months[now.getMonth()];dirMonthIdx=MO.indexOf(dirMonth);
+  dirMonth=months[now.getMonth()];dirMonthIdx=MO.indexOf(dirMonth);dirFY=currentFY||activeFY;
 }
 
 function dirChangeMonth(dir){
-  dirMonthIdx=Math.max(0,Math.min(MO.length-1,dirMonthIdx+dir));dirMonth=MO[dirMonthIdx];
-  document.getElementById('dirMonthLabel').textContent=ML[dirMonth]+' '+fyYear(dirMonth);loadMonthlyStatus();
+  const newIdx=dirMonthIdx+dir;
+  if(newIdx<0||newIdx>=MO.length){
+    const adj=fiscalYears.find(f=>f.start_year===dirFY.start_year+(newIdx<0?-1:1));
+    if(!adj)return;
+    dirFY=adj;dirMonthIdx=newIdx<0?MO.length-1:0;
+  }else dirMonthIdx=newIdx;
+  dirMonth=MO[dirMonthIdx];
+  document.getElementById('dirMonthLabel').textContent=ML[dirMonth]+' '+fyYear(dirMonth,dirFY);loadMonthlyStatus();
 }
 
 function dirTab(tab){
@@ -573,9 +580,10 @@ function dirCenterFilter(c){
 
 async function loadMonthlyStatus(){
   try{
+    if(!dirFY){if(!currentFY)currentFY=await api('/api/fiscal-year');dirFY=currentFY;if(!activeFY)activeFY=currentFY;}
     const centerParam=dirCenter!=='all'?`&center=${dirCenter}`:'';
-    const data=await api(`/api/manage/monthly-status?month_key=${dirMonth}${centerParam}`);
-    const yr=fyYear(dirMonth);document.getElementById('dirMonthLabel').textContent=ML[dirMonth]+' '+yr;
+    const data=await api(`/api/manage/monthly-status?month_key=${dirMonth}&fiscal_year_id=${dirFY.id}${centerParam}`);
+    const yr=fyYear(dirMonth,dirFY);document.getElementById('dirMonthLabel').textContent=ML[dirMonth]+' '+yr;
     let staff=data.staff||[];_dirStatusCache=staff;
     const submitted=staff.filter(s=>s.status==='submitted').length;const total=staff.length;
     let html=`<div style="display:flex;gap:8px;margin-bottom:12px"><div style="flex:1;text-align:center;padding:10px;background:var(--bg);border-radius:8px"><div style="font-size:20px;font-weight:700;color:var(--success)">${submitted}</div><div style="font-size:11px;color:var(--muted)">Submitted</div></div><div style="flex:1;text-align:center;padding:10px;background:var(--bg);border-radius:8px"><div style="font-size:20px;font-weight:700;color:var(--error)">${total-submitted}</div><div style="font-size:11px;color:var(--muted)">Pending</div></div><div style="flex:1;text-align:center;padding:10px;background:var(--bg);border-radius:8px"><div style="font-size:20px;font-weight:700">${total}</div><div style="font-size:11px;color:var(--muted)">Total</div></div></div>`;
@@ -589,7 +597,7 @@ async function loadMonthlyStatus(){
 async function dirReopenMonth(idx){
   const s=_dirStatusCache[idx];if(!s)return;
   if(!confirm(`Reopen ${s.name}'s ${ML[dirMonth]} time entry?`))return;
-  try{const fyRes=await api('/api/fiscal-year');await api('/api/reopen-month',{method:'POST',body:{staff_id:s.id,fiscal_year_id:fyRes.id,month_key:dirMonth}});showToast(`${s.name}'s ${ML[dirMonth]} reopened`,'ok');loadMonthlyStatus();}catch(e){showToast('Error: '+e.message,'err');}
+  try{await api('/api/reopen-month',{method:'POST',body:{staff_id:s.id,fiscal_year_id:dirFY.id,month_key:dirMonth}});showToast(`${s.name}'s ${ML[dirMonth]} reopened`,'ok');loadMonthlyStatus();}catch(e){showToast('Error: '+e.message,'err');}
 }
 
 function canSeeWages(){return currentDirector&&(currentDirector.role==='owner'||currentDirector.role==='admin');}
@@ -644,7 +652,7 @@ async function saveDirector(){
 }
 
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
-function fyYear(mk){return ['oct','nov','dec'].includes(mk)?activeFY.start_year:activeFY.end_year;}
+function fyYear(mk,fy=activeFY){return ['oct','nov','dec'].includes(mk)?fy.start_year:fy.end_year;}
 function monthNum(mk){const map={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};return map[mk];}
 function getDaysInMonth(mk,year){return new Date(year,monthNum(mk)+1,0).getDate();}
 function esc(str){if(!str)return '';return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}

@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const BUILD_VERSION = '2026-03-31d-sso';
+const BUILD_VERSION = '2026-10-07-fy-by-date';
 const HUB_JWT_SECRET = process.env.HUB_JWT_SECRET || '';
 
 const pool = new Pool({
@@ -87,6 +87,26 @@ async function initDB() {
   await pool.query('ALTER TABLE daily_cacfp_entries ADD COLUMN IF NOT EXISTS adult_meal BOOLEAN DEFAULT false');
   await pool.query('ALTER TABLE monthly_signatures ADD COLUMN IF NOT EXISTS admin_note TEXT');
   console.log('✅ Staff Time tables ready');
+}
+
+// CACFP fiscal year runs Oct–Sep. Pick it from today's date (Michigan time) rather than
+// the shared is_active flag — the CACFP Suite flips that flag whenever someone views an
+// older year, which used to lock every teacher into that year. Creates the row if missing.
+async function currentFiscalYear() {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Detroit', year: 'numeric', month: 'numeric' })
+    .formatToParts(new Date());
+  const year = parseInt(parts.find(p => p.type === 'year').value);
+  const month = parseInt(parts.find(p => p.type === 'month').value);
+  const startYear = month >= 10 ? year : year - 1;
+  const found = await pool.query('SELECT * FROM fiscal_years WHERE start_year=$1 ORDER BY id LIMIT 1', [startYear]);
+  if (found.rows[0]) return found.rows[0];
+  await pool.query(
+    `INSERT INTO fiscal_years (label, start_year, end_year, is_active) VALUES ($1, $2, $3, false)
+     ON CONFLICT (label) DO NOTHING`,
+    [`${startYear}-${startYear + 1}`, startYear, startYear + 1]
+  );
+  const created = await pool.query('SELECT * FROM fiscal_years WHERE start_year=$1 ORDER BY id LIMIT 1', [startYear]);
+  return created.rows[0] || null;
 }
 
 function monthKeyFromDate() {
@@ -476,8 +496,12 @@ app.put('/api/manage/staff/:id/reactivate', async (req, res) => {
 // ── MONTHLY STATUS ──
 app.get('/api/manage/monthly-status', async (req, res) => {
   try {
-    const fyRes = await pool.query('SELECT * FROM fiscal_years WHERE is_active=true LIMIT 1');
-    const fy = fyRes.rows[0];
+    let fy = null;
+    if (req.query.fiscal_year_id) {
+      const fyRes = await pool.query('SELECT * FROM fiscal_years WHERE id=$1', [req.query.fiscal_year_id]);
+      fy = fyRes.rows[0];
+    }
+    if (!fy) fy = await currentFiscalYear();
     if (!fy) return res.json({ staff: [] });
     const mk = req.query.month_key || monthKeyFromDate();
     const center = req.query.center || null;
@@ -503,8 +527,7 @@ app.get('/api/manage/monthly-status', async (req, res) => {
 // ── FISCAL YEAR ──
 app.get('/api/fiscal-year', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM fiscal_years WHERE is_active=true LIMIT 1');
-    res.json(rows[0] || null);
+    res.json(await currentFiscalYear());
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
